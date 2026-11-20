@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Full-bleed bordeaux: works as a normal and as a maskable (Android) icon -->
+  <rect width="512" height="512" fill="#7A1E2C"/>
+  <!-- Arch (ivory) -->
+  <path d="M176 400 V256 A80 80 0 0 1 336 256 V400" fill="none" stroke="#FAF6EF" stroke-width="28"/>
+  <!-- Keystone and base (antique gold) -->
+  <path d="M240 160 H272 L266 192 H246 Z" fill="#B08D57"/>
+  <rect x="152" y="400" width="208" height="16" fill="#B08D57"/>
+</svg>

@@ -1,0 +1,868 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+  Vendors Hub design tokens.
+  Direction: neo-classical, European red (the shopping arcade). Screen layouts follow
+  vendors-hub-figma-spec.md; colors, fonts and corners follow this file. Light theme only.
+  Token names are kept from the spec (brand, action, highlight...) so components never hard-code colors.
+*/
+
+/* Always keep room for the scrollbar, so pages don't shift sideways
+   when their length changes (switching tabs, content loading in). */
+html {
+  /* Always show the scrollbar track: page width never changes between short and long pages. */
+  overflow-y: scroll;
+}
+:root {
+  /* shadcn/ui semantic variables */
+   --background: #faf6ef;    /* ivory */
+  --foreground: #1f1a17; /* warm black */
+  --card: #fffdf8; /* warm white */
+  --card-foreground: #1f1a17;
+  --popover: #fffdf8;
+  --popover-foreground: #1f1a17;
+  --primary: #7a1e2c; /* bordeaux: primary buttons */
+  --primary-foreground: #fffdf8;
+  --secondary: #f3ece1;
+  --secondary-foreground: #1f1a17;
+  --muted: #f3ece1;
+  --muted-foreground: #6f655c;
+  --accent: #f3ece1;
+  --accent-foreground: #5e1521;
+  --destructive: #c42b1c; /* scarlet: always with an icon or text */
+  --border: #e6dccb;
+  --input: #d4c6b0;
+  --ring: #7a1e2c;
+  --radius: 0.25rem;
+}
+
+@theme {
+  /* Brand and actions */
+  --color-brand: #7a1e2c; /* bordeaux */
+  --color-brand-alt: #5e1521; /* deep bordeaux: active tab, focus */
+  --color-action: #7a1e2c; /* Buy, Accept, Confirm */
+  --color-action-hover: #5e1521;
+  --color-highlight: #7a5c2e; /* readable gold: bargain, pending, limited */
+  --color-gold: #b08d57; /* antique gold: lines and ornaments only, never small text */
+
+  /* Text */
+  --color-ink: #1f1a17;
+  --color-ink-secondary: #4a413b;
+  --color-ink-muted: #6f655c;
+  --color-ink-disabled: #a99f94;
+
+  /* Surfaces and lines */
+  --color-surface: #faf6ef; /* ivory page */
+  --color-subtle: #f3ece1; /* hover fills, disabled inputs */
+  --color-line: #e6dccb; /* hairlines */
+  --color-line-strong: #d4c6b0; /* hover borders, inputs */
+
+  /* Status */
+  --color-verified: #1e3a5f; /* Prussian blue */
+  --color-warning: #b4530f;
+  --color-error: #c42b1c; /* scarlet, distinct from the bordeaux brand */
+
+  /* Soft fills for badges */
+  --color-success-soft: #e3eee7; /* In Stock fill, customer bargain bubble */
+  --color-success-ink: #2f6b4f; /* In Stock text, success */
+  --color-highlight-soft: #f3e9d6; /* Limited, Bargained, timer bar */
+  --color-error-soft: #f8e1dd; /* Out of Stock, rejected */
+  --color-info-soft: #e6ecf3; /* physical shop badge, info notices */
+  --color-warning-soft: #fbefe3; /* fulfilment notice */
+  --color-payment-soft: #e6ecf3;
+  --color-payment-ink: #1e3a5f;
+
+  /* Corners: small and architectural */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+
+  /* Elevation: barely there, warm */
+  --shadow-card: 0 1px 2px rgba(31, 26, 23, 0.06);
+  --shadow-modal: 0 16px 40px rgba(31, 26, 23, 0.18);
+}
+
+/* shadcn/ui color names + fonts (inline because they point at runtime variables) */
+@theme inline {
+  --font-sans: var(--font-jost), var(--font-bn-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-playfair), var(--font-bn-serif), Georgia, "Times New Roman", serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/*
+  Type scale (classical steps 13 / 16 / 21 / 30 / 36-60).
+  Headings: Playfair Display (Didone). Text and UI: Jost.
+  Named type-* (not text-*) so cn() does not confuse them with text colors.
+*/
+@utility type-display {
+  font-family: var(--font-playfair), var(--font-bn-serif), Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(2.25rem, 1.75rem + 2.5vw, 3.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+@utility type-h2 {
+  font-family: var(--font-playfair), var(--font-bn-serif), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  text-wrap: balance;
+}
+
+@utility type-h3 {
+  font-family: var(--font-playfair), var(--font-bn-serif), Georgia, serif;
+  font-weight: 600;
+  font-size: 1.3125rem;
+  line-height: 1.75rem;
+}
+
+@utility type-body {
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.625rem;
+}
+
+@utility type-body-medium {
+  font-weight: 500;
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+@utility type-caption {
+  font-weight: 500;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  letter-spacing: 0.01em;
+}
+
+/* Prices: lining, equal-width digits so ৳38,500 lines up in lists */
+@utility type-price {
+  font-family: var(--font-jost), var(--font-bn-sans), ui-sans-serif, sans-serif;
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  ::selection {
+    background: #7a1e2c;
+    color: #fffdf8;
+  }
+
+  /*
+    Every button (and every link that looks like a button):
+    - pressed: sinks slightly (scale 0.98);
+    - primary (bordeaux) ones: a soft light sweeps across once on hover.
+    In the base layer on purpose, so a Tailwind class on a single button still wins.
+    Uses the `scale` property, so it never fights a transform already on the element.
+  */
+  @media (prefers-reduced-motion: no-preference) {
+    :where(button, [role="button"], a:is(.bg-action, .bg-primary, .border-brand, .border-ink, .border-highlight)) {
+      transition:
+        scale 150ms ease-out,
+        translate 150ms ease-out;
+    }
+    :where(button, [role="button"], a:is(.bg-action, .bg-primary, .border-brand, .border-ink, .border-highlight)):active:not(
+        :disabled,
+        [aria-disabled="true"]
+      ) {
+      scale: 0.96;
+      translate: 0 0;
+    }
+
+    @media (hover: hover) {
+      /* Filled and outlined buttons rise 2px under the pointer (icons, tabs and menu rows stay put). */
+      :where(button, a):is(.bg-action, .bg-primary, .bg-error, .border-brand, .border-ink, .border-highlight, .border-error):hover:not(
+          :disabled,
+          [aria-disabled="true"],
+          :active
+        ) {
+        translate: 0 -2px;
+      }
+      /* A light streak crosses once: ivory on filled buttons, gold on outlined ones. */
+      :where(button, a):is(.bg-action, .bg-primary, .bg-error, .border-brand, .border-ink, .border-highlight, .border-error):hover:not(
+          :disabled,
+          [aria-disabled="true"]
+        ) {
+        background-image: linear-gradient(110deg, transparent 40%, rgba(176, 141, 87, 0.3) 50%, transparent 60%);
+        background-repeat: no-repeat;
+        background-size: 250% 100%;
+        background-position: 0% 0;
+        animation: vh-button-sweep 700ms ease-out;
+      }
+      :where(button, a):is(.bg-action, .bg-primary, .bg-error):hover:not(:disabled, [aria-disabled="true"]) {
+        background-image: linear-gradient(110deg, transparent 40%, rgba(255, 253, 248, 0.4) 50%, transparent 60%);
+      }
+
+      /* The icon inside a button grows a little under the pointer. */
+      :where(button, a) > :where(svg) {
+        transition: scale 200ms ease-out;
+      }
+      :where(button, a):hover:not(:disabled, [aria-disabled="true"]) > :where(svg) {
+        scale: 1.15;
+      }
+    }
+  }
+
+  /* Respect "reduce motion" in the phone or computer settings */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/*
+  Opening moment: the arcade draws itself (lines, then the red centre arch, then keystone and door).
+  Used with motion-safe:, so nothing animates when "reduce motion" is on.
+*/
+@theme {
+  --animate-arch-draw: vh-arch-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) both;
+  --animate-arch-rise: vh-arch-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-soft-in: vh-soft-in 0.5s ease-out both;
+
+  @keyframes vh-arch-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes vh-arch-rise {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes vh-soft-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+
+/* Sideways-scrolling rows (tabs, chips): swipe or trackpad to scroll, no visible scrollbar,
+   and never a vertical scrollbar. */
+.scroll-row {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+  Motion system (animations 1–7). Rules:
+  - only transform and opacity (clip-path for the wipes), no layout shift;
+  - everything lives inside "no-preference", so "reduce motion" switches it all off
+    and the content is simply there;
+  - nothing here blocks clicks (decorative layers are pointer-events: none).
+*/
+@keyframes vh-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes vh-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em);
+  }
+}
+@keyframes vh-grow-up {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes vh-draw-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes vh-glow-once {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.5;
+  }
+}
+@keyframes vh-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes vh-wipe {
+  from {
+    clip-path: inset(-10% 100% -10% 0);
+  }
+  to {
+    clip-path: inset(-10% -2% -10% 0);
+  }
+}
+@keyframes vh-shine {
+  from {
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(360%) skewX(-20deg);
+  }
+}
+@keyframes vh-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes vh-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes vh-ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+@keyframes vh-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+}
+@keyframes vh-flip {
+  from {
+    opacity: 0;
+    transform: translateY(70%);
+  }
+}
+@keyframes vh-fly-x {
+  to {
+    transform: translateX(var(--fly-x, 0px));
+  }
+}
+@keyframes vh-fly-y {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  35% {
+    transform: translateY(var(--fly-lift, -48px)) scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(var(--fly-y, 0px)) scale(0.35);
+    opacity: 0.2;
+  }
+}
+@keyframes vh-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+@keyframes vh-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+@keyframes vh-flash {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+  }
+}
+/* The light streak sits off the left edge at 100% and off the right edge at 0%. */
+@keyframes vh-button-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+@keyframes vh-soft-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Skeletons: ivory block with a soft gold light passing over it (a loading indicator, so it may loop).
+   Without motion it is a plain still block. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-subtle);
+}
+
+/* Shadow for .lift sits on its own layer so only opacity changes. */
+.lift {
+  position: relative;
+}
+.lift::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 14px 28px rgba(31, 26, 23, 0.14);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Layer that holds the light streak (put it inside a "relative" parent). */
+.shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/*
+  Button shape: every button-like control is a pill (fully rounded ends), echoing the round arches.
+  One place to change it: set --button-radius (e.g. 2px for the old square corners, 12px for soft corners).
+  Matches single-line controls only (fixed height, or the small "py-2" buttons), so cards and
+  multi-line option boxes keep their own corners. Not layered on purpose: it must beat `rounded-sm`.
+*/
+:root {
+  --button-radius: 9999px;
+}
+:where(button, a):where(.rounded-sm):where(.h-9, .h-10, .h-11, .h-12, .h-14, .py-2),
+:where(button, a):where(.rounded-md):where(.h-9, .h-10, .h-11, .h-12):where(.bg-action, .bg-primary, .bg-error, .border-brand, .border-ink, .border-highlight, .border-error),
+:where([data-slot="button"]) {
+  border-radius: var(--button-radius);
+}
+
+/* Market door: the bright gold outline shows only on hover / focus / centre of the screen.
+   (The sweep itself is a transition, added below only when motion is allowed.) */
+.door-sweep {
+  clip-path: inset(100% 0 0 0);
+}
+.door:focus-visible .door-sweep,
+[data-active] > .door .door-sweep {
+  clip-path: inset(0);
+}
+@media (hover: hover) {
+  .door:hover .door-sweep {
+    clip-path: inset(0);
+  }
+}
+
+/* Timer bar: the fill shrinks with scaleX; the colours are stacked layers that cross-fade. */
+.timer-fill {
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ---------- Reusable ---------- */
+
+  /* <Reveal>: hidden only when scripts run (so the content never stays invisible). */
+  @media (scripting: enabled) {
+    .reveal {
+      opacity: 0;
+      transform: translateY(14px);
+      transition:
+        opacity 300ms ease-out,
+        transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .reveal[data-shown] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Children rise in one after another (lists that are on screen at once). */
+  .rise-stagger > * {
+    animation: vh-rise-in 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .rise-stagger > :nth-child(2) {
+    animation-delay: 90ms;
+  }
+  .rise-stagger > :nth-child(3) {
+    animation-delay: 180ms;
+  }
+  .rise-stagger > :nth-child(4) {
+    animation-delay: 270ms;
+  }
+  .rise-stagger > :nth-child(n + 5) {
+    animation-delay: 360ms;
+  }
+
+  .lift {
+    transition: transform 200ms ease-out;
+  }
+  .lift::after {
+    transition: opacity 200ms ease-out;
+  }
+
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(176, 141, 87, 0.2) 50%, transparent 80%);
+    animation: vh-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .shine::after {
+    content: "";
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    left: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgba(176, 141, 87, 0.38), transparent);
+    transform: translateX(-160%) skewX(-20deg);
+  }
+
+  /* A gold line that draws itself from the left. */
+  .draw-line {
+    transform-origin: left center;
+    animation: vh-draw-x 600ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  }
+
+  /* A gold ring that expands and fades once (behind an icon). */
+  .ring-burst {
+    position: relative;
+    isolation: isolate;
+  }
+  .ring-burst::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border: 2px solid var(--color-gold);
+    border-radius: 9999px;
+    opacity: 0;
+    pointer-events: none;
+    animation: vh-ring 600ms ease-out 150ms backwards;
+  }
+  .pop-in {
+    animation: vh-pop 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* ---------- 1. Home hero ---------- */
+  .hero-word {
+    display: inline-block;
+    animation: vh-word-in 400ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .hero-word:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .hero-word:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .hero-word:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .hero-word:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .hero-word:nth-child(n + 6) {
+    animation-delay: 250ms;
+  }
+  .hero-after {
+    animation: vh-rise-in 400ms cubic-bezier(0.22, 1, 0.36, 1) 250ms backwards;
+  }
+
+  /* Arches grow up from the ground like doors opening: 90 ms apart, the red centre arch last. */
+  .arcade-live .arcade-arch,
+  .arcade-live .arcade-centre {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    animation: vh-grow-up 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .arcade-live .arcade-arch:nth-of-type(2) {
+    animation-delay: 90ms;
+  }
+  .arcade-live .arcade-arch:nth-of-type(3) {
+    animation-delay: 180ms;
+  }
+  .arcade-live .arcade-arch:nth-of-type(4) {
+    animation-delay: 270ms;
+  }
+  .arcade-live .arcade-centre {
+    animation-delay: 360ms;
+  }
+  .arcade-live .arcade-glow {
+    animation: vh-glow-once 700ms ease-in-out 560ms both;
+  }
+  .arcade-live .arcade-ground {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: vh-draw-x 650ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  }
+
+  /* ---------- 2. Market doorways ---------- */
+  .door {
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .door-photo {
+    transition: transform 700ms ease-out;
+  }
+  .door-sweep {
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .door-name {
+    transform: translateY(8px);
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .door:focus-visible,
+  [data-active] > .door {
+    transform: translateY(-6px);
+  }
+  .door:focus-visible .door-photo,
+  [data-active] > .door .door-photo {
+    transform: scale(1.06);
+  }
+  .door:focus-visible .door-sweep,
+  [data-active] > .door .door-sweep {
+    clip-path: inset(0);
+  }
+  .door:focus-visible .door-name,
+  [data-active] > .door .door-name {
+    transform: none;
+  }
+
+  /* ---------- 3. Page transitions ---------- */
+  .page-enter {
+    animation: vh-page-in 250ms ease-out backwards;
+  }
+  .page-enter h1:not(.no-wipe) {
+    animation: vh-wipe 500ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  }
+
+  /* ---------- 5. Add to cart ---------- */
+  .cart-burst {
+    position: relative;
+  }
+  .cart-burst::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border: 2px solid var(--color-gold);
+    border-radius: 9999px;
+    opacity: 0;
+    pointer-events: none;
+    animation: vh-ring 450ms ease-out backwards;
+  }
+  .fly-x {
+    animation: vh-fly-x 550ms linear forwards;
+  }
+  .fly-y {
+    animation: vh-fly-y 550ms cubic-bezier(0.4, 0, 0.7, 1) forwards;
+  }
+  .badge-bounce {
+    animation: vh-bounce 300ms ease-out;
+  }
+  .badge-flip {
+    animation: vh-flip 250ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* ---------- 6. Bargain ---------- */
+  .timer-fill {
+    transition: transform 1s linear;
+  }
+  .timer-fill > * {
+    transition: opacity 300ms ease-out;
+  }
+  /* Only in the last minute, so it stops by itself. */
+  .timer-urgent {
+    animation: vh-soft-pulse 1.2s ease-in-out infinite;
+  }
+  .offer-in-left,
+  .offer-in-right {
+    position: relative;
+    animation: vh-slide-left 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .offer-in-right {
+    animation-name: vh-slide-right;
+  }
+  .offer-in-left::after,
+  .offer-in-right::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--color-gold);
+    opacity: 0;
+    pointer-events: none;
+    animation: vh-flash 700ms ease-out 150ms backwards;
+  }
+
+  /* Hover effects only where a real pointer exists (touch screens use data-active instead). */
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-4px);
+    }
+    .lift:hover::after {
+      opacity: 1;
+    }
+    .group:hover .shine::after {
+      animation: vh-shine 600ms ease-out;
+    }
+    .door:hover {
+      transform: translateY(-6px);
+    }
+    .door:hover .door-photo {
+      transform: scale(1.06);
+    }
+    .door:hover .door-sweep {
+      clip-path: inset(0);
+    }
+    .door:hover .door-name {
+      transform: none;
+    }
+  }
+}
+
+/* ---------- Dashboards: arch bar charts, rank bars, counters ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Bars rise from the baseline like a row of arches being built (delay set per bar). */
+  .bar-grow {
+    transform-origin: center bottom;
+    animation: vh-grow-up 500ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  /* The gold keystone drops onto the tallest arch once the bars are up. */
+  .bar-keystone {
+    animation: vh-keystone 300ms cubic-bezier(0.22, 1, 0.36, 1) 650ms backwards;
+  }
+  /* Horizontal rank bars draw from the start edge. */
+  .bar-draw {
+    transform-origin: left center;
+    animation: vh-draw-x 600ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  }
+  .rank-stagger > :nth-child(2) .bar-draw {
+    animation-delay: 80ms;
+  }
+  .rank-stagger > :nth-child(3) .bar-draw {
+    animation-delay: 160ms;
+  }
+  .rank-stagger > :nth-child(4) .bar-draw {
+    animation-delay: 240ms;
+  }
+  .rank-stagger > :nth-child(n + 5) .bar-draw {
+    animation-delay: 320ms;
+  }
+}
+@keyframes vh-keystone {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* ---------- Home page: things that play when their <Reveal> comes into view ---------- */
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+  /* Gold line that draws from the centre outward (section headings, step connector). */
+  .reveal .line-grow {
+    transform: scaleX(0);
+    transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1) 150ms;
+  }
+  .reveal[data-shown] .line-grow {
+    transform: none;
+  }
+  /* Icon or badge that pops once its card has arrived. */
+  .reveal[data-shown] .reveal-pop {
+    animation: vh-pop 300ms cubic-bezier(0.22, 1, 0.36, 1) 200ms backwards;
+  }
+  /* Arch badge that grows up from its base, like the hero arches. */
+  .reveal .arch-up {
+    transform: scaleY(0);
+    transform-origin: center bottom;
+    transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1) 150ms;
+  }
+  .reveal[data-shown] .arch-up {
+    transform: none;
+  }
+}
+
+/* ---------- <Stagger>: children wait hidden until anime.js brings them in ---------- */
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+  .stagger > :not([data-in]) {
+    opacity: 0;
+    /* Safety net: if the script never runs, the content still shows after 3 seconds. */
+    animation: vh-show 1ms linear 3s forwards;
+  }
+}
+@keyframes vh-show {
+  to {
+    opacity: 1;
+  }
+}

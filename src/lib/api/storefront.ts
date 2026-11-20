@@ -1,0 +1,213 @@
+// Shop storefront and market reads (public). Types match the real API responses.
+import { API_URL, type ApiResult } from "./core";
+import { publicGet } from "./public";
+import type { components } from "./schema";
+import type { Market, MarketImage } from "./shops";
+import type { District } from "@/lib/districts";
+type Availability = components["schemas"]["Availability"];
+type VerificationLevel = components["schemas"]["VerificationLevel"];
+type ProductSort = "newest" | "price_asc" | "price_desc";
+
+export type CoverPhoto = { url: string; kind: string; verified: boolean };
+
+export const SOCIAL_KEYS = ["facebook", "instagram", "tiktok", "youtube", "website"] as const;
+export type SocialKey = (typeof SOCIAL_KEYS)[number];
+// Answers always carry all five keys; null = not set.
+export type SocialLinks = Record<SocialKey, string | null>;
+
+// GET /shops/:slug
+export type Storefront = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  phone: string | null; // "01712345678"; null for shops created before phones were required
+  whatsapp: string | null;
+  socialLinks: SocialLinks;
+  logoUrl: string | null;
+  bannerUrl: string | null;
+  coverPhoto: CoverPhoto | null;
+  photoCount: number;
+  address: {
+    levelFloor: string | null;
+    shopNumber: string | null;
+    addressLine: string;
+    latitude: number | null;
+    longitude: number | null;
+  };
+  market: { id: string; name: string; slug: string } | null;
+  verification: { level: VerificationLevel; lastAuditedAt: string | null };
+  supportsDelivery: boolean;
+  supportsPickup: boolean;
+  returnPolicy: { text: string; windowDays: number | null } | null;
+  stats: {
+    ratingAverage: number | null;
+    reviewCount: number;
+    avgResponseMins: number | null;
+    followers: number;
+    activeBargains: number;
+  };
+  staffCount: number;
+  isFollowing: boolean; // only true when the request carries the user's token
+};
+
+// GET /shops/:slug/products (one row per listing of this shop)
+export type ShopProduct = {
+  listingId: string;
+  product: { id: string; slug: string; title: string; brand: string | null; image: string | null };
+  price: number;
+  msrp: number | null;
+  availability: Availability;
+  bargainEnabled: boolean;
+};
+
+// GET /shops/:slug/categories
+export type ShopCategory = { id: string; name: string; slug: string; productCount: number };
+
+// GET /shops/:slug/reviews
+export type ShopReview = {
+  id: string;
+  type: "PRODUCT" | "SHOP_TRUST";
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  reviewer: string;
+  product: { title: string; slug: string } | null;
+};
+
+// GET /markets/:slug
+export type MarketShop = {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  levelFloor: string | null;
+  shopNumber: string | null;
+  addressLine: string;
+  verificationLevel: VerificationLevel;
+  coverPhoto: CoverPhoto | null;
+};
+
+export type MarketDetail = {
+  id: string;
+  name: string;
+  slug: string;
+  city: string | null;
+  district: District;
+  address: string | null;
+  image: MarketImage | null;
+  latitude: number | null;
+  longitude: number | null;
+  shops: MarketShop[];
+};
+
+const shopPath = (slug: string) => `/shops/${encodeURIComponent(slug)}`;
+
+export async function getStorefront(slug: string): Promise<Storefront> {
+  return (await publicGet<Storefront>(shopPath(slug))).data;
+}
+
+export function listShopProducts(
+  slug: string,
+  query: {
+    category?: string;
+    sort?: ProductSort;
+    bargainOnly?: boolean;
+    availableOnly?: boolean;
+    page?: number;
+    limit?: number;
+  },
+): Promise<ApiResult<ShopProduct[]>> {
+  return publicGet<ShopProduct[]>(`${shopPath(slug)}/products`, query);
+}
+
+export async function listShopCategories(slug: string): Promise<ShopCategory[]> {
+  return (await publicGet<ShopCategory[]>(`${shopPath(slug)}/categories`)).data;
+}
+
+export function listShopReviews(
+  slug: string,
+  query: { type?: "PRODUCT" | "SHOP_TRUST"; page?: number; limit?: number },
+): Promise<ApiResult<ShopReview[]>> {
+  return publicGet<ShopReview[]>(`${shopPath(slug)}/reviews`, query);
+}
+
+/**
+ * GET /markets filtered by the API: one district and/or a name that contains `q` (at most 100
+ * characters). Leave a filter out for "all": the API answers 400 to an empty or unknown district.
+ */
+export async function findMarkets(filter: { district?: District; q?: string }): Promise<Market[]> {
+  return (await publicGet<Market[]>("/markets", { district: filter.district, q: filter.q })).data;
+}
+
+export async function getMarketDetail(slug: string): Promise<MarketDetail> {
+  return (await publicGet<MarketDetail>(`/markets/${encodeURIComponent(slug)}`)).data;
+}
+
+// Photos are only shown from our own API (shop owners can type any banner link: no trackers, no outside sites).
+const MEDIA_ORIGIN = new URL(API_URL).origin;
+
+export function safeMediaUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if ((url.protocol === "https:" || url.protocol === "http:") && url.origin === MEDIA_ORIGIN) return url.toString();
+  } catch {
+    // not a URL: ignore
+  }
+  return null;
+}
+
+const SOCIAL_HOSTS: Record<Exclude<SocialKey, "website">, string[]> = {
+  facebook: ["facebook.com", "fb.com"],
+  instagram: ["instagram.com"],
+  tiktok: ["tiktok.com"],
+  youtube: ["youtube.com", "youtu.be"],
+};
+
+/**
+ * A shop's social link, only when it follows the backend's rules: https, at most 200 characters,
+ * and on the site it is named after (any public site for "website"). Used to check the owner's
+ * form and again before a link is shown.
+ */
+export function safeSocialUrl(key: SocialKey, value: string | null | undefined): string | null {
+  if (!value || value.length > 200 || !/^https:\/\//i.test(value)) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const ok =
+      key === "website"
+        ? host.includes(".")
+        : SOCIAL_HOSTS[key].some((site) => host === site || host.endsWith(`.${site}`));
+    if (url.protocol === "https:" && ok) return url.toString();
+  } catch {
+    // not a URL: ignore
+  }
+  return null;
+}
+
+const SHOP_PHONE = /^01\d{9}$/;
+
+/** "01712345678" -> "tel:+8801712345678"; null when there is no (valid) number, so the button is hidden. */
+export function callHref(phone: string | null | undefined): string | null {
+  return phone && SHOP_PHONE.test(phone) ? `tel:+88${phone}` : null;
+}
+
+/** "01712345678" -> "https://wa.me/8801712345678". */
+export function whatsappHref(phone: string | null | undefined): string | null {
+  return phone && SHOP_PHONE.test(phone) ? `https://wa.me/88${phone}` : null;
+}
+
+/** "Level 3 · Shop 42" (adds "Shop" to a bare number). */
+export function shopPlace(levelFloor: string | null, shopNumber: string | null): string {
+  const number = shopNumber ? (/^shop\b/i.test(shopNumber) ? shopNumber : `Shop ${shopNumber}`) : null;
+  return [levelFloor, number].filter(Boolean).join(" · ");
+}
+
+/** "Rahim Uddin Ahmed" -> "Rahim A." (reviewers' full names are not shown publicly). */
+export function shortName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
+}
