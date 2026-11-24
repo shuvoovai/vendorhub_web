@@ -46,23 +46,38 @@ export type Cart = {
 
 export const cartKeys = { cart: ["cart"] as const };
 
-// Every call returns the full, updated cart.
+// ---------- Guest cart ----------
+// Guests get a cart too. The server keeps its id in an httpOnly cookie (JavaScript never sees it),
+// so cart calls send cookies. After login the guest cart is merged into the user's cart.
+const C = { withCookies: true } as const;
+
+// Every call returns the full, updated cart. Works for guests and logged-in users.
 export function getCart(): Promise<Cart> {
-  return api.get<Cart>("/cart");
+  return api.get<Cart>("/cart", C);
 }
 
 export function addToCart(listingId: string, quantity = 1): Promise<Cart> {
-  return api.post<Cart>("/cart/items", { listingId, quantity });
+  return api.post<Cart>("/cart/items", { listingId, quantity }, C);
 }
 
 export function updateCartItem(itemId: string, quantity: number): Promise<Cart> {
-  return api.patch<Cart>(`/cart/items/${encodeURIComponent(itemId)}`, { quantity });
+  return api.patch<Cart>(`/cart/items/${encodeURIComponent(itemId)}`, { quantity }, C);
 }
 
 export function removeCartItem(itemId: string): Promise<Cart> {
-  return api.delete<Cart>(`/cart/items/${encodeURIComponent(itemId)}`);
+  return api.delete<Cart>(`/cart/items/${encodeURIComponent(itemId)}`, C);
 }
 
 export function clearCart(): Promise<Cart> {
-  return api.delete<Cart>("/cart");
+  return api.delete<Cart>("/cart", C);
+}
+
+let merging: Promise<Cart | null> | null = null;
+
+/** Right after login: move the guest cart (if any) into the user's cart. Runs once even if called twice. */
+export function mergeGuestCart(): Promise<Cart | null> {
+  merging ??= api.post<Cart | null>("/cart/merge", undefined, C).finally(() => {
+    merging = null;
+  });
+  return merging;
 }

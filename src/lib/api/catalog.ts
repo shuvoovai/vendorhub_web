@@ -24,6 +24,7 @@ export type ProductCardData = {
   availability: Availability; // the best availability among the shops
   bargainAvailable: boolean;
   createdAt: string;
+  bestListingId?: string | null; // the cheapest in-stock shop offer: "Add to cart" / "Buy now" on the card
 };
 
 export type ProductSort = "newest" | "price_asc" | "price_desc";

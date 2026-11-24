@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useSession } from "@/components/app-providers";
+import { useCartReady } from "@/components/cart/cart-badge";
 import { VerificationSeal } from "@/components/brand/verification-seal";
 import { AvailabilityBadge } from "@/components/catalog/availability-badge";
 import { CategoryIcon } from "@/components/catalog/product-card";
@@ -60,7 +61,8 @@ export function CartView() {
   const [error, setError] = useState<ItemError>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  const cart = useQuery({ queryKey: cartKeys.cart, queryFn: getCart, enabled: status === "authenticated" });
+  const ready = useCartReady();
+  const cart = useQuery({ queryKey: cartKeys.cart, queryFn: getCart, enabled: ready });
 
   // The server's answer is always the truth: totals and prices are never computed here.
   function showCart(data: Cart) {
@@ -98,25 +100,12 @@ export function CartView() {
 
   const busyItemId = update.isPending ? update.variables?.itemId : remove.isPending ? remove.variables : undefined;
 
-  if (status === "loading" || (status === "authenticated" && cart.isPending)) {
+  if (status === "loading" || !ready || cart.isPending) {
     return (
       <p role="status" className="type-body flex items-center justify-center gap-2 py-12 text-ink-secondary">
         <LoaderCircle className="size-5 animate-spin" aria-hidden />
         {t("loading")}
       </p>
-    );
-  }
-
-  if (status === "guest") {
-    return (
-      <div className={panel}>
-        <ShoppingCart className="size-10 text-highlight" strokeWidth={1.5} aria-hidden />
-        <h2 className="type-h3 text-ink">{t("guestTitle")}</h2>
-        <p className="type-body max-w-sm text-ink-secondary">{t("guestText")}</p>
-        <Link href={`/auth/login?next=${encodeURIComponent("/cart")}`} className={primaryButton}>
-          {t("logIn")}
-        </Link>
-      </div>
     );
   }
 

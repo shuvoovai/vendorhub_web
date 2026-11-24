@@ -50,7 +50,11 @@ function homeFor(user: SessionUser | null): string {
   return user?.role === "SHOP_OWNER" ? "/owner" : "/";
 }
 
-export function LoginForm() {
+/**
+ * onSuccess: used inside the login popup (checkout). The user stays on the page instead of
+ * being sent on; `next` is then only used for the "create account" link.
+ */
+export function LoginForm({ onSuccess, next }: { onSuccess?: () => void; next?: string } = {}) {
   const t = useTranslations("Auth");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,7 +62,7 @@ export function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null);
 
   // An explicit ?next= page wins (only same-site paths, never back into /auth).
-  const nextParam = searchParams.get("next");
+  const nextParam = next ?? searchParams.get("next");
   const explicitNext = useMemo(() => {
     if (!nextParam) return null;
     const path = safeRedirectPath(nextParam);
@@ -81,8 +85,8 @@ export function LoginForm() {
 
   // Already logged in (e.g. opened /auth/login from a bookmark): go on.
   useEffect(() => {
-    if (status === "authenticated") router.replace(explicitNext ?? homeFor(user));
-  }, [status, user, router, explicitNext]);
+    if (status === "authenticated" && !onSuccess) router.replace(explicitNext ?? homeFor(user));
+  }, [status, user, router, explicitNext, onSuccess]);
 
     // Next.js 16 keeps a page you leave alive in the background (instant "back").
   // Clear the form when it is hidden, so typed data (email, password) never stays behind.
@@ -97,7 +101,8 @@ export function LoginForm() {
     setFormError(null);
     try {
       const loggedIn = await login({ email: values.email, password: values.password });
-      router.replace(explicitNext ?? homeFor(loggedIn));
+      if (onSuccess) onSuccess();
+      else router.replace(explicitNext ?? homeFor(loggedIn));
     } catch (err) {
       setFormError(t(errorKey(err)));
       resetField("password");

@@ -108,11 +108,12 @@ export type RequestOptions = {
   signal?: AbortSignal;
   auth?: boolean; // send the access token and refresh once on 401 (default true)
   cookieMode?: boolean; // login / register / logout: send and receive the session cookie
+  withCookies?: boolean; // cart: send the httpOnly guest-cart cookie (no extra headers)
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   // const { method = "GET", query, body, signal, auth = true, cookieMode = false } = options;
-  const { method = "GET", query, body, signal, auth = true, cookieMode = false, headers: extraHeaders } = options;
+  const { method = "GET", query, body, signal, auth = true, cookieMode = false, withCookies = false, headers: extraHeaders } = options;
   // On page load the first refresh may still be running: wait so this request carries the token.
   if (auth && refreshing) await refreshing.catch(() => null);
 
@@ -135,7 +136,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       headers,
       body: payload,
       signal,
-      credentials: cookieMode ? "include" : "same-origin",
+      credentials: cookieMode || withCookies ? "include" : "same-origin",
     });
   };
 

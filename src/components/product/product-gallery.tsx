@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { ArchFrame } from "@/components/brand/arch-frame";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -12,7 +11,7 @@ type Props = {
   placeholder: React.ReactNode; // shown when the product has no photos
 };
 
-/** Main photo in the arch frame, thumbnails to switch (only when there is more than one photo). */
+/** Main photo in a square box, thumbnails to switch (only when there is more than one photo). */
 export function ProductGallery({ images, title, placeholder }: Props) {
   const t = useTranslations("Product");
   const [index, setIndex] = useState(0);
@@ -21,7 +20,7 @@ export function ProductGallery({ images, title, placeholder }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <ArchFrame ratio="portrait" className="w-full bg-highlight-soft lg:max-w-[560px]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-md border border-line bg-highlight-soft lg:max-w-[560px]">
         {current ? (
           <Image
             src={current}
@@ -30,12 +29,12 @@ export function ProductGallery({ images, title, placeholder }: Props) {
             unoptimized
             priority
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
+            className="object-contain"
           />
         ) : (
           placeholder
         )}
-      </ArchFrame>
+      </div>
 
       {total > 1 && (
         <ul aria-label={t("photos")} className="flex gap-2 overflow-x-auto pb-1">
@@ -47,7 +46,7 @@ export function ProductGallery({ images, title, placeholder }: Props) {
                 aria-pressed={i === index}
                 aria-label={t("photoN", { n: i + 1, total })}
                 className={cn(
-                  "relative block size-16 overflow-hidden rounded-t-full rounded-b-sm border-2 bg-subtle focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none",
+                  "relative block size-16 overflow-hidden rounded-sm border-2 bg-subtle focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none",
                   i === index ? "border-brand" : "border-transparent hover:border-line-strong",
                 )}
               >

@@ -755,7 +755,9 @@
       "stock": "The shop can't supply that many. Try a smaller quantity.",
       "network": "Can't reach Vendors Hub. Check your connection and try again.",
       "generic": "Couldn't update your cart. Try again in a moment."
-    }
+    },
+    "buyNow": "Buy now",
+    "addShort": "Add to cart"
   },
   "Checkout": {
     "metaTitle": "Checkout",
@@ -763,8 +765,8 @@
     "loading": "Loading your order…",
     "loadError": "Your cart couldn't load. Check your connection and try again.",
     "retry": "Try again",
-    "guestTitle": "Log in to check out",
-    "guestText": "Your cart is saved to your account.",
+    "guestTitle": "Log in to place your order",
+    "guestText": "Your cart is kept. Log in or create an account to finish checkout.",
     "logIn": "Log in",
     "emptyTitle": "Your cart is empty",
     "emptyText": "Add something before checking out.",
@@ -2586,5 +2588,9 @@
     "videoReplace": "Replace video (optional)",
     "switchNote": "Saving with a new file replaces the current one.",
     "untitled": "Untitled banner"
+  },
+  "LoginDialog": {
+    "title": "Log in to continue",
+    "text": "Your cart stays as it is. After logging in you go straight on to checkout."
   }
 }

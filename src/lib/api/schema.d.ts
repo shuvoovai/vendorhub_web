@@ -487,7 +487,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** My cart, grouped by shop, with live prices and problems flagged */
+        /**
+         * My cart (or the guest cart), grouped by shop, with live prices and problems flagged
+         * @description Logged in (Bearer): the user's cart. Guest: the cart named by the httpOnly cookie "vh_guest_cart"; without a (known) cookie an empty cart is returned and nothing is created. A cart id is never read from the body, query or a header. An invalid Bearer token is 401 (never a silent guest cart). Sent with Cache-Control "private, no-store".
+         */
         get: operations["getCart"];
         put?: never;
         post?: never;
@@ -509,7 +512,7 @@ export interface paths {
         put?: never;
         /**
          * Add a shop listing to my cart (adds to the quantity if already there)
-         * @description Maximum 10 per item. An item with an applied bargain price is limited to 1 unit.
+         * @description Maximum 10 per item. An item with an applied bargain price is limited to 1 unit. Guest without a cart: the first valid add creates the guest cart and sets the cookie "vh_guest_cart" (random UUID; HttpOnly; SameSite=Lax; Path=/api/v1/cart; Max-Age 30 days; Secure in production). Guest carts unused for 30 days are deleted. Guest writes are limited to 60 per minute per IP (429).
          */
         post: operations["addCartItem"];
         delete?: never;
@@ -2752,6 +2755,26 @@ export interface paths {
         patch: operations["adminUpdateToletInquiry"];
         trace?: never;
     };
+    "/api/v1/cart/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move the guest cart into my cart after login
+         * @description Login required. Reads the "vh_guest_cart" cookie (never a body, query or header value). Each guest item is added to the user's cart: the same listing adds the quantities, capped at 10 (and at the stock when known); listings that are gone or out of stock are skipped, and a line with an applied bargain stays as it is. The guest cart is then deleted and the cookie cleared. Idempotent: a second call (or a replayed old cookie) merges nothing. No cookie, or an unknown one: 200 with the user's cart.
+         */
+        post: operations["mergeGuestCart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2854,6 +2877,11 @@ export interface components {
             shopCount?: number;
             availability?: components["schemas"]["Availability"];
             bargainAvailable?: boolean;
+            /**
+             * Format: uuid
+             * @description The listing "add to cart" uses: the cheapest active, in-stock listing of an active, verified shop (ties: newest), among the listings this list counts (e.g. only that shop on a shop page). Null if none.
+             */
+            bestListingId?: string | null;
             /** Format: date-time */
             createdAt?: string;
         };
@@ -3654,6 +3682,11 @@ export interface components {
             shopCount: number;
             availability: components["schemas"]["Availability"];
             bargainAvailable: boolean;
+            /**
+             * Format: uuid
+             * @description The listing "add to cart" uses: the cheapest active, in-stock listing of an active, verified shop (ties: newest), among the listings this list counts (e.g. only that shop on a shop page). Null if none.
+             */
+            bestListingId?: string | null;
             /** Format: date-time */
             createdAt: string;
             dealPrice: number;
@@ -5128,6 +5161,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     addCartItem: {
@@ -5161,6 +5195,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     removeCartItem: {
@@ -5185,6 +5220,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateCartItem: {
@@ -5217,6 +5253,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     checkout: {
@@ -8562,6 +8599,11 @@ export interface operations {
                                 title: string;
                                 image: string | null;
                                 thumbnail: string | null;
+                                /**
+                                 * Format: uuid
+                                 * @description The listing "add to cart" uses: the cheapest active, in-stock listing of an active, verified shop (ties: newest), among the listings this list counts (e.g. only that shop on a shop page). Null if none.
+                                 */
+                                bestListingId: string | null;
                                 lowestPrice: number;
                                 shopCount: number;
                                 /** @enum {string} */
@@ -9848,6 +9890,30 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    mergeGuestCart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The full user cart (same shape as GET /cart). */
+            200: {
+                headers: {
+                    /** @description Clears vh_guest_cart when one was sent. */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
 }

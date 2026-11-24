@@ -1,25 +1,55 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/components/app-providers";
-import { cartKeys, getCart } from "@/lib/api/cart";
+import { cartKeys, getCart, mergeGuestCart } from "@/lib/api/cart";
 import { cn } from "@/lib/utils";
 
 /**
- * Number of items in the logged-in user's cart (0 for guests).
- * Shares the cart data with the cart page and "Add to cart", so it updates instantly.
+ * True when the cart can be loaded: always for guests; for a logged-in user once the guest cart
+ * (if any) has been merged into theirs. Shared by the badge, the cart page and checkout.
  */
-export function useCartCount(): number {
+export function useCartReady(): boolean {
   const { status } = useSession();
+  const queryClient = useQueryClient();
+  const merge = useQuery({
+    queryKey: ["cart-merge"],
+    enabled: status === "authenticated",
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const cart = await mergeGuestCart().catch(() => null);
+      if (cart) queryClient.setQueryData(cartKeys.cart, cart);
+      else await queryClient.invalidateQueries({ queryKey: cartKeys.cart });
+      return true;
+    },
+  });
+
+  // Logged out: forget the user's cart (the guest cart loads instead) and merge again on the next login.
+  const wasAuthed = useRef(false);
+  useEffect(() => {
+    if (status === "guest" && wasAuthed.current) {
+      queryClient.removeQueries({ queryKey: cartKeys.cart });
+      queryClient.removeQueries({ queryKey: ["cart-merge"] });
+    }
+    wasAuthed.current = status === "authenticated";
+  }, [status, queryClient]);
+
+  return status === "guest" || (status === "authenticated" && merge.isSuccess);
+}
+
+/** Number of items in the cart (guests have a cart too). */
+export function useCartCount(): number {
+  const ready = useCartReady();
   const { data } = useQuery({
     queryKey: cartKeys.cart,
     queryFn: getCart,
-    enabled: status === "authenticated",
+    enabled: ready,
     select: (cart) => cart.totals.itemCount,
     staleTime: 30_000,
   });
-  return status === "authenticated" ? (data ?? 0) : 0;
+  return data ?? 0;
 }
 
 /** Sent on window when something was just added to the cart (after the little photo lands). */

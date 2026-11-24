@@ -5,6 +5,8 @@ import { Circle, CircleAlert, CircleCheck, Info, LoaderCircle, MapPin, ShoppingC
 import { useLocale, useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { useSession } from "@/components/app-providers";
+import { LoginDialog } from "@/components/auth/login-dialog";
+import { useCartReady } from "@/components/cart/cart-badge";
 import { VerificationSeal } from "@/components/brand/verification-seal";
 import { TextField } from "@/components/ui/text-field";
 import { Link, useRouter } from "@/i18n/routing";
@@ -81,7 +83,10 @@ export function CheckoutView() {
   const queryClient = useQueryClient();
   const { status, user } = useSession();
 
-  const cart = useQuery({ queryKey: cartKeys.cart, queryFn: getCart, enabled: status === "authenticated" });
+  const ready = useCartReady();
+  const cart = useQuery({ queryKey: cartKeys.cart, queryFn: getCart, enabled: status === "authenticated" && ready });
+  // Guests: the login popup opens by itself; closing it leaves a button to open it again.
+  const [loginOpen, setLoginOpen] = useState(true);
   const saved = useQuery({ queryKey: addressKeys.all, queryFn: listAddresses, enabled: status === "authenticated" });
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const [address, setAddress] = useState<Address>({ line1: "", area: "", city: "Dhaka", phone: "" });
@@ -113,7 +118,7 @@ export function CheckoutView() {
     },
   });
 
-  if (status === "loading" || (status === "authenticated" && cart.isPending)) {
+  if (status === "loading" || (status === "authenticated" && (!ready || cart.isPending))) {
     return (
       <p role="status" className="type-body flex items-center justify-center gap-2 py-12 text-ink-secondary">
         <LoaderCircle className="size-5 animate-spin" aria-hidden />
@@ -130,9 +135,10 @@ export function CheckoutView() {
         <ShoppingCart className="size-10 text-highlight" strokeWidth={1.5} aria-hidden />
         <h2 className="type-h3 text-ink">{t("guestTitle")}</h2>
         <p className="type-body text-ink-secondary">{t("guestText")}</p>
-        <Link href={`/auth/login?next=${encodeURIComponent("/checkout")}`} className={primaryButton}>
+        <button type="button" onClick={() => setLoginOpen(true)} className={primaryButton}>
           {t("logIn")}
-        </Link>
+        </button>
+        <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} next="/checkout" />
       </div>
     );
   }

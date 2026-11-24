@@ -1,23 +1,24 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleAlert, CircleCheck, LoaderCircle, ShoppingCart } from "lucide-react";
+import { Check, CircleAlert, CircleCheck, LoaderCircle, ShoppingCart, Zap } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "@/components/app-providers";
 import { CART_LANDED_EVENT } from "@/components/cart/cart-badge";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import { addToCart, cartKeys, type Cart } from "@/lib/api/cart";
 import { ApiError } from "@/lib/api/core";
 import { safeMediaUrl } from "@/lib/api/storefront";
+import { cn } from "@/lib/utils";
 
 type Props = {
   listingId: string;
-  productSlug: string; // to come back to this product (and this shop) after login
+  productSlug?: string; // kept for callers; guests can add without logging in
   disabled?: boolean; // out of stock
   image?: string | null; // product photo: a tiny copy flies to the cart icon
+  compact?: boolean; // product grid card: smaller text, short labels
 };
 
 // Fixed, friendly messages only; the server never reveals stock numbers anyway.
@@ -32,8 +33,10 @@ function errorKey(err: unknown): string {
   return "errors.generic";
 }
 
-const buttonClass =
-  "type-body-medium flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-action px-4 text-primary-foreground hover:bg-action-hover focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50";
+const base =
+  "flex w-full items-center justify-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-safe:transition-colors";
+const solid = "bg-action text-primary-foreground hover:bg-action-hover";
+const outline = "border border-brand bg-card text-brand hover:bg-subtle";
 
 const FLY_MS = 550; // same as .fly-x / .fly-y in globals.css
 const DONE_MS = 1400; // how long the button shows the checkmark
@@ -50,9 +53,9 @@ function visibleCartTarget(): DOMRect | null {
   return null;
 }
 
-export function AddToCartButton({ listingId, productSlug, disabled = false, image = null }: Props) {
+export function AddToCartButton({ listingId, disabled = false, image = null, compact = false }: Props) {
   const t = useTranslations("Cart");
-  const { status } = useSession();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const timers = useRef<number[]>([]);
@@ -110,53 +113,65 @@ export function AddToCartButton({ listingId, productSlug, disabled = false, imag
     );
   }
 
-  const add = useMutation({
+  // Variables = which button was pressed ("add" stays here, "buy" goes on to checkout).
+  const add = useMutation<Cart, unknown, "add" | "buy">({
     // Only the listing and quantity are sent; the price is decided by the server.
     mutationFn: () => addToCart(listingId, 1),
     onMutate: () => setMessage(null),
-    onSuccess: (cart) => {
-      setMessage({ kind: "ok", text: t("added") });
+    onSuccess: (cart, mode) => {
+      if (mode === "buy") {
+        // Buy now: straight to checkout (it asks guests to log in there).
+        queryClient.setQueryData(cartKeys.cart, cart);
+        router.push("/checkout");
+        return;
+      }
+      if (!compact) setMessage({ kind: "ok", text: t("added") });
       celebrate(cart);
     },
     onError: (err) => setMessage({ kind: "error", text: t(errorKey(err)) }),
   });
-
-  if (status !== "authenticated") {
-    const next = `/products/${productSlug}?listing=${listingId}`;
-    return (
-      <Link
-        href={`/auth/login?next=${encodeURIComponent(next)}`}
-        aria-disabled={status === "loading" || disabled}
-        className={buttonClass}
-      >
-        <ShoppingCart className="size-5" aria-hidden />
-        {t("loginToAdd")}
-      </Link>
-    );
-  }
+  const busy = (mode: "add" | "buy") => add.isPending && add.variables === mode;
+  const size = compact ? "type-caption h-11 px-2" : "type-body-medium h-12 px-4";
 
   return (
     <div className="flex flex-col gap-2">
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => add.mutate()}
-        disabled={disabled || add.isPending}
-        aria-busy={add.isPending}
-        className={buttonClass}
-      >
-        {add.isPending ? (
-          <LoaderCircle className="size-5 animate-spin" aria-hidden />
-        ) : done ? (
-          // Checkmark pops in with a small gold ring burst
-          <span className="cart-burst flex">
-            <Check className="pop-in size-5" strokeWidth={2.5} aria-hidden />
-          </span>
-        ) : (
-          <ShoppingCart className="size-5" aria-hidden />
-        )}
-        {add.isPending ? t("adding") : done ? t("added") : t("add")}
-      </button>
+      <div className={cn("grid gap-2", compact ? "grid-cols-2" : "sm:grid-cols-2")}>
+        <button
+          type="button"
+          onClick={() => add.mutate("buy")}
+          disabled={disabled || add.isPending}
+          aria-busy={busy("buy")}
+          className={cn(base, solid, size)}
+        >
+          {busy("buy") ? (
+            <LoaderCircle className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Zap className="size-4" aria-hidden />
+          )}
+          {t("buyNow")}
+        </button>
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => add.mutate("add")}
+          disabled={disabled || add.isPending}
+          aria-busy={busy("add")}
+          aria-label={compact ? t("add") : undefined}
+          className={cn(base, outline, size)}
+        >
+          {busy("add") ? (
+            <LoaderCircle className="size-4 animate-spin" aria-hidden />
+          ) : done ? (
+            // Checkmark pops in with a small gold ring burst
+            <span className="cart-burst flex">
+              <Check className="pop-in size-4" strokeWidth={2.5} aria-hidden />
+            </span>
+          ) : (
+            <ShoppingCart className="size-4" aria-hidden />
+          )}
+          {compact ? t("addShort") : busy("add") ? t("adding") : done ? t("added") : t("add")}
+        </button>
+      </div>
 
       {/* A tiny arch (the product photo when there is one) arcs to the cart icon.
           Outer box moves sideways at a steady pace, inner box rises then falls: together, an arc. */}
@@ -196,7 +211,7 @@ export function AddToCartButton({ listingId, productSlug, disabled = false, imag
         </p>
       )}
       {message?.kind === "error" && (
-        <p role="alert" className="type-body flex items-start gap-2 text-error">
+        <p role="alert" className={cn("flex items-start gap-2 text-error", compact ? "type-caption" : "type-body")}>
           <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           {message.text}
         </p>

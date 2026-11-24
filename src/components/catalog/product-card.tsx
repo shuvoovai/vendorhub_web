@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { PriceTicket } from "@/components/brand/price-ticket";
+import { AddToCartButton } from "@/components/cart/add-to-cart";
 import { AvailabilityBadge } from "@/components/catalog/availability-badge";
 import { Reveal } from "@/components/motion/reveal";
 import { Link } from "@/i18n/routing";
@@ -60,10 +61,12 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 
   return (
     // Reveal: rises in on scroll, neighbours one after another. The link lifts on hover (.lift).
+    // The link covers photo, name and price; the buy buttons sit below it (a button can't be inside a link).
     <Reveal className="flex">
+    <div className="lift flex w-full flex-col gap-2 rounded-md border border-line bg-card p-2 pb-3 shadow-card transition-colors hover:border-line-strong">
     <Link
       href={`/products/${product.slug}`}
-      className="group lift flex w-full flex-col gap-2 rounded-md border border-line bg-card p-2 pb-3 shadow-card transition-colors hover:border-line-strong focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+      className="group flex flex-1 flex-col gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
     >
       <div className="relative aspect-square overflow-hidden rounded-sm bg-highlight-soft">
         {product.image ? (
@@ -106,6 +109,18 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         <span className="type-caption text-ink-muted">{t("shops", { count: product.shopCount })}</span>
       </div>
     </Link>
+    {/* Cheapest shop's offer. Without one (older API), the card links to the product to choose a shop. */}
+    {product.bestListingId && (
+      <div className="px-1 pt-1">
+        <AddToCartButton
+          listingId={product.bestListingId}
+          image={product.image}
+          disabled={product.availability === "OUT_OF_STOCK"}
+          compact
+        />
+      </div>
+    )}
+    </div>
     </Reveal>
   );
 }
