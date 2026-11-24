@@ -17,7 +17,7 @@ const csp = [
   `img-src 'self' data: blob: ${apiOrigin}`, // add the media/CDN origin here when uploads move there
   "font-src 'self' data:", // next/font serves Google fonts from our own origin
   `connect-src 'self' ${apiOrigin}${isDev ? " ws: wss:" : ""}`, // API only (+ hot reload in dev)
-  "media-src 'self' blob:",
+  `media-src 'self' blob: ${apiOrigin}`,
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",

@@ -31,10 +31,10 @@ type Choice = { delivery: DeliveryMethod; payment: PaymentMethod };
 type Address = { line1: string; area: string; city: string; phone: string };
 type AddressErrors = Partial<Record<keyof Address | "all", string>>;
 
-// Backend rules: pay at store only with pickup, cash on delivery only with delivery, online with either.
+// Backend rules: pay at store only with pickup, cash on delivery only with delivery, online and bKash with either.
 const PAYMENTS: Record<DeliveryMethod, PaymentMethod[]> = {
-  STORE_PICKUP: ["PAY_AT_STORE", "ONLINE"],
-  VENDOR_DELIVERY: ["CASH_ON_DELIVERY", "ONLINE"],
+  STORE_PICKUP: ["PAY_AT_STORE", "BKASH", "ONLINE"],
+  VENDOR_DELIVERY: ["CASH_ON_DELIVERY", "BKASH", "ONLINE"],
 };
 
 function defaultChoice(group: CartGroup): Choice {
@@ -415,6 +415,7 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, onChange
     PAY_AT_STORE: { label: t("payAtStore"), hint: t("payAtStoreHint") },
     CASH_ON_DELIVERY: { label: t("cod"), hint: t("codHint") },
     ONLINE: { label: t("online"), hint: t("onlineHint") },
+    BKASH: { label: t("bkash"), hint: t("bkashHint") },
   };
 
   return (

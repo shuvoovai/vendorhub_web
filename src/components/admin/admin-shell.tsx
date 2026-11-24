@@ -1,16 +1,18 @@
 "use client";
 
-import { ArrowLeft, LoaderCircle, ShieldCheck, Store,LayoutDashboard, Package,ScrollText,Tags,Scale, Users, ChartColumn , Building2, type LucideIcon } from "lucide-react";
+import { ArrowLeft, LoaderCircle, ShieldCheck, Store,LayoutDashboard, Package,ScrollText,Tags,Scale, Users, ChartColumn , Building2, UtensilsCrossed, House, ShoppingBag, GalleryHorizontal, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Suspense, type ReactNode } from "react";
 import { useSession } from "@/components/app-providers";
 import { Link, usePathname } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
-const NAV: { href: string; key: "queue" | "markets" | "products" | "audit" | "catalog" | "disputes" | "users" | "shops" | "overview" | "reports"; icon: LucideIcon }[] = [
+const NAV: { href: string; key: "queue" | "markets" | "products" | "audit" | "catalog" | "disputes" | "users" | "shops" | "overview" | "reports" | "foodOrders" | "tolets" | "orders" | "banners"; icon: LucideIcon }[] = [
   { href: "/admin", key: "queue", icon: ShieldCheck },
   { href: "/admin/reports", key: "reports", icon: ChartColumn },
+  { href: "/admin/orders", key: "orders", icon: ShoppingBag },
   { href: "/admin/overview", key: "overview", icon: LayoutDashboard },
+  { href: "/admin/banners", key: "banners", icon: GalleryHorizontal },
   { href: "/admin/markets", key: "markets", icon: Store },
   { href: "/admin/products", key: "products", icon: Package },
   { href: "/admin/audit", key: "audit", icon: ScrollText },
@@ -18,6 +20,8 @@ const NAV: { href: string; key: "queue" | "markets" | "products" | "audit" | "ca
     { href: "/admin/disputes", key: "disputes", icon: Scale },
   { href: "/admin/users", key: "users", icon: Users },
   { href: "/admin/shops", key: "shops", icon: Building2 },
+  { href: "/admin/food-orders", key: "foodOrders", icon: UtensilsCrossed },
+  { href: "/admin/tolets", key: "tolets", icon: House },
 ];
 
 

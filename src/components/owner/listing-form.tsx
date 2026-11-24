@@ -17,6 +17,7 @@ import {
   type ListingInput,
   type ManualAvailability,
   type OwnerListing,
+  type StockVisibility,
 } from "@/lib/api/listings";
 import { safeMediaUrl } from "@/lib/api/storefront";
 import { formatTaka } from "@/lib/format";
@@ -163,6 +164,7 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
   const [manual, setManual] = useState<ManualAvailability>(
     listing && listing.stockQty === null && listing.availability !== "IN_STOCK" ? (listing.availability as ManualAvailability) : "AVAILABLE",
   );
+  const [visibility, setVisibility] = useState<StockVisibility>(listing?.stockVisibility ?? "PUBLIC");
   const [offers, setOffers] = useState(listing?.bargainEnabled ?? false);
   const [minOffer, setMinOffer] = useState(String(listing?.minOfferPercent ?? 92));
   const [errors, setErrors] = useState<Partial<Record<"price" | "stock" | "minOffer" | "form", string>>>({});
@@ -198,6 +200,8 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
       price: priceValue,
       stockQty: track ? (stockValue ?? 0) : null,
       ...(!track && { availability: manual }),
+      // Sent only when the API knows the field or the owner picked "Only vendors", so saving works on an older API
+      ...(track && (visibility !== "PUBLIC" || listing?.stockVisibility) && { stockVisibility: visibility }),
       bargainEnabled: offers,
       minOfferPercent: offers ? (minValue ?? 92) : (listing?.minOfferPercent ?? 92),
     });
@@ -265,6 +269,32 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
             className={inputClass}
           />
           {errors.stock && <p className="type-caption text-error">{errors.stock}</p>}
+          <fieldset className="mt-2 flex flex-col gap-2">
+            <legend className="type-body-medium mb-1 text-ink">{t("form.stockVisibility")}</legend>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(["PUBLIC", "VENDORS", "HIDDEN"] as const).map((value) => (
+                <label
+                  key={value}
+                  className={cn(
+                    "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand",
+                    visibility === value ? "border-brand bg-highlight-soft/40" : "border-line-strong bg-card hover:border-brand",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name={`${id}-visibility`}
+                    checked={visibility === value}
+                    onChange={() => setVisibility(value)}
+                    className="mt-1 size-4 accent-brand"
+                  />
+                  <span className="flex flex-col">
+                    <span className="type-body-medium text-ink">{t(`form.visibility.${value}`)}</span>
+                    <span className="type-caption text-ink-muted">{t(`form.visibility.${value}_hint`)}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">

@@ -8,6 +8,9 @@ type Availability = components["schemas"]["Availability"];
 /** Availability the shop may set by hand when it doesn't count stock. */
 export type ManualAvailability = "AVAILABLE" | "LIMITED" | "OUT_OF_STOCK";
 
+// Who sees the number of items in stock: everyone, only vendors (shop teams), or only this shop's team.
+export type StockVisibility = "PUBLIC" | "VENDORS" | "HIDDEN";
+
 // The shop team's view of a listing (includes the private fields stockQty, minOfferPercent, isActive).
 export type OwnerListing = {
   id: string;
@@ -16,6 +19,7 @@ export type OwnerListing = {
   price: number;
   availability: Availability;
   stockQty: number | null;
+  stockVisibility?: StockVisibility; // missing until the backend supports it
   bargainEnabled: boolean;
   minOfferPercent: number;
   isActive: boolean;
@@ -38,6 +42,7 @@ export type ListingInput = {
   price: number;
   stockQty: number | null;
   availability?: ManualAvailability; // only when stock is not counted
+  stockVisibility?: StockVisibility;
   bargainEnabled: boolean;
   minOfferPercent: number;
 };

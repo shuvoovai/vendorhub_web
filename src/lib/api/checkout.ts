@@ -8,7 +8,8 @@ export type OrderStatus = components["schemas"]["OrderStatus"];
 export type PaymentStatus = components["schemas"]["PaymentStatus"];
 
 export type DeliveryMethod = "STORE_PICKUP" | "VENDOR_DELIVERY";
-export type PaymentMethod = "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY";
+// BKASH: no gateway yet. The order is placed with payment PENDING; the admin marks it paid.
+export type PaymentMethod = "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
 
 export const ORDER_STATUSES: OrderStatus[] = [
   "PLACED",
@@ -89,4 +90,20 @@ export function listOrders(query: { status?: OrderStatus; page: number; limit: n
 // The customer cancels their own order (only while PLACED; the backend checks both).
 export function cancelOrder(orderId: string, reason?: string): Promise<Order> {
   return api.post<Order>(`/orders/${encodeURIComponent(orderId)}/cancel`, reason ? { reason } : {});
+}
+// ---------- Admin: orders the vendor has approved (CONFIRMED and later) ----------
+export type AdminOrder = Order & { customer: { id: string; name: string; phone: string | null } | null };
+export type AdminOrderUpdate = { status?: OrderStatus; paymentStatus?: PaymentStatus };
+
+export const adminOrderKeys = {
+  all: ["admin", "orders"] as const,
+  list: (status: OrderStatus | undefined, page: number) => ["admin", "orders", status ?? "ALL", page] as const,
+};
+
+export function adminListOrders(query: { status?: OrderStatus; page: number; limit: number }): Promise<ApiResult<AdminOrder[]>> {
+  return api.list<AdminOrder>("/admin/orders", { query });
+}
+
+export function adminUpdateOrder(orderId: string, body: AdminOrderUpdate): Promise<AdminOrder> {
+  return api.patch<AdminOrder>(`/admin/orders/${encodeURIComponent(orderId)}`, body);
 }

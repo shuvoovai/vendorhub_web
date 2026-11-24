@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ArchFrame } from "@/components/brand/arch-frame";
 import { PriceTicket } from "@/components/brand/price-ticket";
 import { AvailabilityBadge } from "@/components/catalog/availability-badge";
 import { Reveal } from "@/components/motion/reveal";
@@ -66,7 +65,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
       href={`/products/${product.slug}`}
       className="group lift flex w-full flex-col gap-2 rounded-md border border-line bg-card p-2 pb-3 shadow-card transition-colors hover:border-line-strong focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
     >
-      <ArchFrame className="bg-highlight-soft">
+      <div className="relative aspect-square overflow-hidden rounded-sm bg-highlight-soft">
         {product.image ? (
           // Photos come from our API (allowed by the CSP). Optimisation is switched on at deployment.
           <Image
@@ -75,7 +74,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             fill
             unoptimized
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-            className="object-cover transition-transform duration-300 ease-out motion-safe:group-hover:scale-105"
+            className="object-contain transition-transform duration-300 ease-out motion-safe:group-hover:scale-105"
           />
         ) : (
           <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-highlight">
@@ -90,7 +89,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             <span className="sr-only">: {t("bargainAvailable")}</span>
           </span>
         )}
-      </ArchFrame>
+      </div>
 
       <div className="flex flex-col gap-1 px-1">
         {product.brand && <p className="type-caption text-ink-muted">{product.brand.name}</p>}
@@ -114,7 +113,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 export function ProductCardSkeleton() {
   return (
     <div className="flex flex-col gap-2 rounded-md border border-line bg-card p-2 pb-3" aria-hidden>
-      <div className="skeleton aspect-[4/5] rounded-t-full rounded-b-sm" />
+      <div className="skeleton aspect-square rounded-sm" />
       <div className="skeleton h-4 w-3/4 rounded-sm" />
       <div className="skeleton h-6 w-1/2 rounded-sm" />
     </div>

@@ -199,7 +199,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** All categories with product counts */
+        /**
+         * All categories with product counts
+         * @description Default: every category (subcategories too), alphabetical. With topLevel=true (home page): only top-level categories, productCount includes their subcategories' active products, ordered by sortOrder, then productCount descending.
+         */
         get: operations["listCategories"];
         put?: never;
         post?: never;
@@ -429,9 +432,9 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Follow a shop */
+        /** Follow a shop (idempotent; a shop's own owner/staff cannot follow it) */
         post: operations["followShop"];
-        /** Unfollow a shop */
+        /** Unfollow a shop (idempotent) */
         delete: operations["unfollowShop"];
         options?: never;
         head?: never;
@@ -724,7 +727,7 @@ export interface paths {
         put?: never;
         /**
          * Make an offer (accepted automatically when it meets the shop's minimum)
-         * @description One live negotiation per customer and listing. The shop is notified.
+         * @description One live negotiation per customer and listing. The shop is notified. During a running flash deal the offer range and the saved listPrice are based on the deal price (computed by the server).
          */
         post: operations["createBargain"];
         delete?: never;
@@ -2212,6 +2215,543 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home page slider banners (active, within their dates, by sortOrder, at most 5)
+         * @description Public. Sent with Cache-Control "public, max-age=60".
+         */
+        get: operations["listHomeBanners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All banners, including inactive and scheduled ones */
+        get: operations["adminListBanners"];
+        put?: never;
+        /**
+         * Create a banner (multipart; audited as banner.created)
+         * @description A banner is a photo OR a video: send exactly one file (none or both is 400). "image": JPG, PNG or WebP (type read from the content), max 3 MB, at least 800 x 267; center-cropped to 1600 x 534 and re-encoded as WebP without metadata, with a thumbnail. "video": MP4 or WebM (type read from the first bytes, not the name or header), max 20 MB, saved under a random name; no thumbnail. The whole request may be up to 25 MB. Text fields are plain text. href must be an internal path ("/..." but not "//..."). An empty optional field means null. startsAt/endsAt accept an offset, e.g. "2026-12-01T00:00:00+06:00". The audit entry records mediaType (image or video).
+         */
+        post: operations["adminCreateBanner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/banners/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set the order of all banners (audited as banner.reordered)
+         * @description ids must name every banner exactly once; the position becomes sortOrder (0, 1, 2, ...).
+         */
+        patch: operations["adminReorderBanners"];
+        trace?: never;
+    };
+    "/api/v1/admin/banners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a banner and its photo and video files (audited as banner.deleted) */
+        delete: operations["adminDeleteBanner"];
+        options?: never;
+        head?: never;
+        /**
+         * Update fields and/or replace the photo or video (audited as banner.updated)
+         * @description Multipart (or JSON when no file is sent, e.g. { "isActive": false } for show/hide). Same rules as create; every field is optional. "image" makes it a photo banner (the old video file is deleted, videoUrl null); "video" makes it a video banner (the old photo files are deleted, imageUrl and thumbUrl null). Both files is 400; no file changes only the text fields. The audit entry records mediaType, mediaReplaced and, when replaced, previousMediaType.
+         */
+        patch: operations["adminUpdateBanner"];
+        trace?: never;
+    };
+    "/api/v1/deals/flash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Running flash deals as product cards (soonest-ending first)
+         * @description Public. Sent with Cache-Control "public, max-age=60". Deals that are active, started and not ended (startsAt <= now < endsAt), with deal units left, on an active in-stock listing of an active VERIFIED shop. One item per product (its cheapest running deal), soonest-ending first. Each item is the GET /products card plus the deal fields; id is the product id. No stock number is ever included (availability only).
+         */
+        get: operations["listFlashDeals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shops/{shopId}/deals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The deals on this shop's listings (owner, staff or admin) */
+        get: operations["ownerListDeals"];
+        put?: never;
+        /**
+         * Create a flash deal on one of the shop's listings (audited as deal.created)
+         * @description dealPrice must be lower than the listing price; endsAt after startsAt, at most 7 days later and in the future. At most one active deal per listing in any period (409). A listing of another shop: 404.
+         */
+        post: operations["ownerCreateDeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shops/{shopId}/deals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a deal (audited as deal.deleted) */
+        delete: operations["ownerDeleteDeal"];
+        options?: never;
+        head?: never;
+        /** Update a deal (same rules as create; audited as deal.updated) */
+        patch: operations["ownerUpdateDeal"];
+        trace?: never;
+    };
+    "/api/v1/admin/deals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All flash deals (latest end first) */
+        get: operations["adminListDeals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/deals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete any deal (audited as deal.admin_deleted) */
+        delete: operations["adminDeleteDeal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Home page "From the shops" feed (shops I follow / other shops)
+         * @description Product cards (the same shape as GET /products) from active, in-stock listings of active VERIFIED shops. scope=followed: shops the user follows; scope=unfollowed: every other such shop. The user's own shops (owner or staff) are never included. lowestPrice, highestPrice, shopCount, availability and bargainAvailable count only the shops in the chosen scope. Newest listing first, one card per product. No stock numbers. Sent with Cache-Control "private, no-store".
+         */
+        get: operations["listFollowingFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The active shops I follow, most recently followed first
+         * @description Sent with Cache-Control "private, no-store".
+         */
+        get: operations["listMyFollowedShops"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/food/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The available food menu (vendors and admins)
+         * @description SHOP_OWNER, SHOP_STAFF or ADMIN; customers get 403, guests 401. Available items by sortOrder. Sent with Cache-Control "private, no-store".
+         */
+        get: operations["listFoodItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/food/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Order food (vendors only)
+         * @description SHOP_OWNER or SHOP_STAFF only. The server takes the price from the menu and calculates unitPrice and total; any price, total or shopId in the body is ignored. shopId is the vendor's own shop. About 10 accepted orders per hour per user (429). Admins are notified.
+         */
+        post: operations["createFoodOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/food-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My food orders, newest first (vendors only) */
+        get: operations["listMyFoodOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/food-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All food orders, newest first, with the vendor and the vendor's shop */
+        get: operations["adminListFoodOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/food-orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a food order's status (audited as food_order.status_changed; the vendor is notified)
+         * @description Allowed PENDING -> CONFIRMED or CANCELLED, CONFIRMED -> DELIVERED or CANCELLED; anything else is 409.
+         */
+        patch: operations["adminUpdateFoodOrder"];
+        trace?: never;
+    };
+    "/api/v1/admin/food-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The whole menu, including unavailable items */
+        get: operations["adminListFoodItems"];
+        put?: never;
+        /** Add a menu item (audited as food_item.created) */
+        post: operations["adminCreateFoodItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/food-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a menu item that was never ordered (audited as food_item.deleted)
+         * @description An item with orders cannot be deleted (409); set isAvailable to false instead.
+         */
+        delete: operations["adminDeleteFoodItem"];
+        options?: never;
+        head?: never;
+        /** Change a menu item (audited as food_item.updated) */
+        patch: operations["adminUpdateFoodItem"];
+        trace?: never;
+    };
+    "/api/v1/tolets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Approved shop-space listings, newest first
+         * @description Public. Only APPROVED listings that have not expired (approval lasts 60 days). Never includes the contact name or phone (visitors use POST /tolets/{id}/inquiries), submitter, IP hash, reviewer or rejection reason. Sent with Cache-Control "public, max-age=60".
+         */
+        get: operations["listTolets"];
+        put?: never;
+        /**
+         * Submit a shop-space listing (no login needed; reviewed by an admin)
+         * @description Public; a valid Bearer token links the request to the account. Unknown keys are rejected (400). Text is plain (control characters removed, HTML tags rejected). Always saved as PENDING; admins are notified. Limits: 3 saved requests per hour and 10 per day per connection, 3 pending per contact phone (429). website is a hidden spam trap: leave it empty.
+         */
+        post: operations["createTolet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/tolets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My to-let requests (any status, with the rejection reason) */
+        get: operations["listMyTolets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/tolets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one of my to-let requests */
+        delete: operations["deleteMyTolet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tolets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** To-let requests for review, newest first (everything, incl. the submitter) */
+        get: operations["adminListTolets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tolets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Approve or reject a to-let request (audited; the submitter is notified if they have an account)
+         * @description Approval makes it public for 60 days. A reason (max 300) is required when rejecting. The same status again is 409.
+         */
+        patch: operations["adminReviewTolet"];
+        trace?: never;
+    };
+    "/api/v1/admin/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Orders the shops have accepted (every status except PLACED), newest first */
+        get: operations["adminListOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/orders/{orderId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Move an order's status and/or payment status (audited; customer and shop are notified)
+         * @description status: CONFIRMED -> READY_FOR_PICKUP (pickup) or OUT_FOR_DELIVERY (delivery); those -> COMPLETED; any non-final -> CANCELLED (stock is restored). paymentStatus: PENDING/FAILED -> PAID (not when the order is or becomes CANCELLED); PAID -> REFUNDED only when the order is or becomes CANCELLED. Any other move is 409. PLACED orders are 404 (the shop has not accepted them yet).
+         */
+        patch: operations["adminUpdateOrder"];
+        trace?: never;
+    };
+    "/api/v1/tolets/{id}/inquiries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask to visit an approved to-let listing (no login needed)
+         * @description Public. The listing must be APPROVED and not expired (else 404). Unknown keys are rejected (400). Text is plain. Limit: 5 saved requests per hour per connection (429). website is a hidden spam trap: leave it empty (a filled one still answers 201, but nothing is saved).
+         */
+        post: operations["createToletInquiry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tolet-inquiries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Visit requests, newest first (at most 100) */
+        get: operations["adminListToletInquiries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tolet-inquiries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a visit request's status (audited)
+         * @description Allowed changes are NEW to CONTACTED or CLOSED, CONTACTED to CLOSED, and CLOSED to NEW. Anything else is 409.
+         */
+        patch: operations["adminUpdateToletInquiry"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2280,6 +2820,7 @@ export interface components {
             slug?: string;
             /** Format: uuid */
             parentId?: string | null;
+            sortOrder?: number;
             productCount?: number;
         };
         Brand: {
@@ -2337,14 +2878,22 @@ export interface components {
                 count?: number;
             };
         };
-        /** @description One shop's offer for a product. Stock numbers are never shown publicly, only the availability. */
+        /** @description One shop's offer for a product. stockQty is sent only when the listing's stockVisibility allows the viewer (log in with a Bearer token to be recognised); otherwise null. When the answer contains such a listing it is sent with Cache-Control "private, no-store" and Vary Authorization. */
         Listing: {
             /** Format: uuid */
-            id?: string;
-            price?: number;
-            availability?: components["schemas"]["Availability"];
+            id: string;
+            price: number;
+            /** @description The stock number, or null when it is not counted or this viewer may not see it (stockVisibility). Availability is always sent. */
+            stockQty: number | null;
+            availability: components["schemas"]["Availability"];
             bargainEnabled?: boolean;
             discountPercent?: number | null;
+            /** @description A running flash deal on this listing; the cart and checkout charge dealPrice. */
+            deal?: {
+                dealPrice: number;
+                /** Format: date-time */
+                endsAt: string;
+            } | null;
             shop?: components["schemas"]["ListingShop"];
         };
         ProductDetail: {
@@ -2545,13 +3094,14 @@ export interface components {
              */
             fileUrl: string;
         };
-        /** @description The shop's own view of a listing (includes stockQty and minOfferPercent, never shown publicly). */
+        /** @description The shop's own view of a listing (always includes stockQty, stockVisibility and minOfferPercent). */
         ShopListing: {
             /** Format: uuid */
             id?: string;
             price?: number;
             availability?: components["schemas"]["Availability"];
             stockQty?: number | null;
+            stockVisibility?: components["schemas"]["StockVisibility"];
             bargainEnabled?: boolean;
             minOfferPercent?: number;
             isActive?: boolean;
@@ -2566,7 +3116,7 @@ export interface components {
             success?: boolean;
             data?: components["schemas"]["ShopListing"];
         };
-        /** @description The cart grouped by shop, with live prices, problems flagged per item, and whether checkout is possible. */
+        /** @description The cart grouped by shop, with live prices, problems flagged per item, and whether checkout is possible. Each item's unitPrice is computed by the server: the lowest of the listing price, a running flash deal (dealApplied true, dealEndsAt set; only while deal units are left for that quantity) and an accepted bargain (bargainApplied). Checkout charges the same price. Each item also has stockQty: the number only when the listing's stockVisibility allows this user, else null; a quantity above the real stock gets 409 without the number. */
         Cart: {
             shops?: {
                 [key: string]: unknown;
@@ -2594,7 +3144,7 @@ export interface components {
             checkoutId?: string;
             status?: components["schemas"]["OrderStatus"];
             /** @enum {string} */
-            paymentMethod?: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY";
+            paymentMethod?: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
             paymentStatus?: components["schemas"]["PaymentStatus"];
             /** @enum {string} */
             deliveryMethod?: "STORE_PICKUP" | "VENDOR_DELIVERY";
@@ -2620,6 +3170,12 @@ export interface components {
             totalAmount: number;
             orders: components["schemas"]["CustomerOrder"][];
         };
+        /**
+         * @description Who may see the stock number: PUBLIC (everyone), VENDORS (admins and teams of verified shops), HIDDEN (admins and this shop's team). Default HIDDEN.
+         * @default HIDDEN
+         * @enum {string}
+         */
+        StockVisibility: "PUBLIC" | "VENDORS" | "HIDDEN";
         /** @description A negotiation. secondsLeft and yourTurn drive the countdown and the buttons. */
         Bargain: {
             /** Format: uuid */
@@ -2632,6 +3188,14 @@ export interface components {
             expiresAt?: string;
             secondsLeft?: number;
             yourTurn?: boolean;
+            listing?: {
+                /** Format: uuid */
+                id: string;
+                price: number;
+                availability: components["schemas"]["Availability"];
+                /** @description The stock number, or null when it is not counted or this viewer may not see it (stockVisibility). Availability is always sent. */
+                stockQty: number | null;
+            };
         } & {
             [key: string]: unknown;
         };
@@ -2882,6 +3446,7 @@ export interface components {
             listing: {
                 price: number;
                 stockQty?: number | null;
+                stockVisibility?: components["schemas"]["StockVisibility"];
                 availability?: components["schemas"]["Availability"];
                 /** @default false */
                 bargainEnabled: boolean;
@@ -2929,6 +3494,7 @@ export interface components {
             id: string;
             price: number;
             stockQty: number | null;
+            stockVisibility: components["schemas"]["StockVisibility"];
             availability: components["schemas"]["Availability"];
             bargainEnabled: boolean;
             minOfferPercent: number;
@@ -2958,7 +3524,7 @@ export interface components {
             checkoutId: string;
             status: components["schemas"]["OrderStatus"];
             /** @enum {string} */
-            paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY";
+            paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
             paymentStatus: components["schemas"]["PaymentStatus"];
             /** @enum {string} */
             deliveryMethod: "STORE_PICKUP" | "VENDOR_DELIVERY";
@@ -3010,6 +3576,299 @@ export interface components {
              * @description Internal reference to the market photo (set with PUT /admin/markets/{marketId}/image).
              */
             imageId: string | null;
+        };
+        BannerFields: {
+            titleEn?: string;
+            titleBn?: string;
+            textEn?: string;
+            textBn?: string;
+            ctaEn?: string;
+            ctaBn?: string;
+            /** @example /markets */
+            href?: string;
+            sortOrder?: number;
+            isActive?: boolean;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
+        };
+        PublicBanner: {
+            /** Format: uuid */
+            id: string;
+            /** @description Photo banner - our own API origin, /media/<uuid>.webp (1600 x 534). Null for a video banner. */
+            imageUrl: string | null;
+            /** @description Video banner - our own API origin, /media/<uuid>.mp4 or .webm (Range requests supported). Null for a photo banner. */
+            videoUrl: string | null;
+            titleEn: string | null;
+            titleBn: string | null;
+            textEn: string | null;
+            textBn: string | null;
+            ctaEn: string | null;
+            ctaBn: string | null;
+            href: string;
+        };
+        AdminBanner: components["schemas"]["PublicBanner"] & {
+            /** @description Null for a video banner. */
+            thumbUrl: string | null;
+            sortOrder: number;
+            isActive: boolean;
+            /** Format: date-time */
+            startsAt: string | null;
+            /** Format: date-time */
+            endsAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AdminBannerResponse: {
+            success: boolean;
+            data: components["schemas"]["AdminBanner"];
+        };
+        FlashDealCard: {
+            /**
+             * Format: uuid
+             * @description The product id.
+             */
+            id: string;
+            slug: string;
+            title: string;
+            brand: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            category: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                slug: string;
+            };
+            image: string | null;
+            thumbnail: string | null;
+            msrp: number | null;
+            /** @description Lowest normal listing price of the product (all shops). */
+            lowestPrice: number;
+            highestPrice: number;
+            shopCount: number;
+            availability: components["schemas"]["Availability"];
+            bargainAvailable: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            dealPrice: number;
+            /** @description The deal listing's normal price. */
+            originalPrice: number;
+            /** Format: date-time */
+            dealEndsAt: string;
+            /** Format: uuid */
+            dealId: string;
+            /**
+             * Format: uuid
+             * @description The listing the deal is on (open /products/{slug}?listingId= to buy at the deal price).
+             */
+            listingId: string;
+        };
+        FlashDeal: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            listingId: string;
+            dealPrice: number;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            isActive: boolean;
+            stockLimit: number | null;
+            soldQty: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            listing: {
+                /** Format: uuid */
+                id: string;
+                price: number;
+                shop: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string;
+                    slug: string;
+                };
+                product: {
+                    /** Format: uuid */
+                    id: string;
+                    slug: string;
+                    title: string;
+                };
+            };
+        };
+        FlashDealResponse: {
+            success: boolean;
+            data: components["schemas"]["FlashDeal"];
+        };
+        FollowResult: {
+            following: boolean;
+            followers: number;
+        };
+        /** @enum {string} */
+        FoodOrderStatus: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
+        FoodItem: {
+            /** Format: uuid */
+            id: string;
+            nameEn: string;
+            nameBn: string;
+            descriptionEn: string | null;
+            descriptionBn: string | null;
+            /** @description BDT */
+            price: number;
+            emoji: string | null;
+            isAvailable: boolean;
+        };
+        AdminFoodItem: components["schemas"]["FoodItem"] & {
+            sortOrder: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AdminFoodItemResponse: {
+            success: boolean;
+            data: components["schemas"]["AdminFoodItem"];
+        };
+        FoodItemInput: {
+            nameEn?: string;
+            nameBn?: string;
+            descriptionEn?: string | null;
+            descriptionBn?: string | null;
+            price?: number;
+            emoji?: string | null;
+            isAvailable?: boolean;
+            sortOrder?: number;
+        };
+        FoodOrder: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            itemId: string;
+            /** @description Snapshot of the item name when ordered. */
+            itemName: string;
+            /** @description BDT, from the menu when ordered. */
+            unitPrice: number;
+            quantity: number;
+            /** @description unitPrice x quantity, calculated by the server. */
+            total: number;
+            name: string;
+            phone: string;
+            address: string;
+            note: string | null;
+            status: components["schemas"]["FoodOrderStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        FoodOrderResponse: {
+            success: boolean;
+            data: components["schemas"]["FoodOrder"];
+        };
+        AdminFoodOrder: components["schemas"]["FoodOrder"] & {
+            vendor: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            };
+            shop: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                slug: string;
+            } | null;
+        };
+        /** @enum {string} */
+        ToletType: "SHOP" | "SHOWROOM" | "KIOSK" | "FOOD_COURT" | "WAREHOUSE";
+        /** @enum {string} */
+        ToletStatus: "PENDING" | "APPROVED" | "REJECTED";
+        Tolet: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["ToletType"];
+            title: string;
+            marketName: string | null;
+            floor: string | null;
+            area: string;
+            address: string;
+            rent: number;
+            advance: number | null;
+            sizeSqft: number | null;
+            /**
+             * Format: date
+             * @example 2026-12-01
+             */
+            availableFrom: string;
+            description: string | null;
+            status: components["schemas"]["ToletStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        OwnTolet: components["schemas"]["Tolet"] & {
+            contactName: string;
+            contactPhone: string;
+            rejectionReason: string | null;
+            /** Format: date-time */
+            expiresAt: string | null;
+        };
+        AdminTolet: components["schemas"]["OwnTolet"] & {
+            submitter: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                email: string | null;
+            } | null;
+            reviewedBy: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+        };
+        AdminOrder: components["schemas"]["CustomerOrder"] & {
+            customer: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                phone: string | null;
+            };
+        };
+        /** @enum {string} */
+        ToletInquiryTime: "MORNING" | "AFTERNOON" | "EVENING";
+        /** @enum {string} */
+        ToletInquiryStatus: "NEW" | "CONTACTED" | "CLOSED";
+        ToletInquiry: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            phone: string;
+            /** Format: date */
+            preferredDate: string;
+            preferredTime: components["schemas"]["ToletInquiryTime"];
+            message: string | null;
+            status: components["schemas"]["ToletInquiryStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            tolet: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                type: components["schemas"]["ToletType"];
+                area: string;
+                marketName: string | null;
+                rent: number;
+                contactName: string;
+                contactPhone: string;
+            };
         };
     };
     responses: {
@@ -3165,6 +4024,10 @@ export interface components {
         ShopIdPath: string;
         ProductIdPath: string;
         ImageIdPath: string;
+        DealShopId: string;
+        DealId: string;
+        FoodId: string;
+        ToletId: string;
     };
     requestBodies: {
         PhotoUpload: {
@@ -3502,14 +4365,16 @@ export interface operations {
     };
     listCategories: {
         parameters: {
-            query?: never;
+            query?: {
+                topLevel?: "true" | "false";
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Categories, alphabetical. */
+            /** @description Categories. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3562,7 +4427,10 @@ export interface operations {
                 shopId?: string;
                 marketId?: string;
                 availableOnly?: "true" | "false";
-                sort?: "newest" | "price_asc" | "price_desc";
+                /** @description popular = units ordered in the last 30 days (cancelled orders excluded), then newest. */
+                sort?: "newest" | "price_asc" | "price_desc" | "popular";
+                /** @description Only products added in the last N days ("New arrivals"). */
+                newSinceDays?: number;
                 page?: components["parameters"]["Page"];
                 limit?: number;
             };
@@ -3906,7 +4774,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One page of this shop's products, with this shop's price and availability. */
+            /** @description One page of this shop's products, with this shop's price and availability. Each item's stockQty is the number only when the listing's stockVisibility allows the viewer (Bearer token optional), else null; "private, no-store" when the page contains such a listing. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3915,9 +4783,15 @@ export interface operations {
                     "application/json": {
                         /** @example true */
                         success?: boolean;
-                        data?: {
+                        data?: ({
+                            /** Format: uuid */
+                            listingId: string;
+                            price: number;
+                            availability: components["schemas"]["Availability"];
+                            stockQty: number | null;
+                        } & {
                             [key: string]: unknown;
-                        }[];
+                        })[];
                         meta?: {
                             pagination?: components["schemas"]["Pagination"];
                         };
@@ -4046,11 +4920,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FollowResult"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
@@ -4072,11 +4945,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FollowResult"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
@@ -4127,6 +4999,7 @@ export interface operations {
                     price: number;
                     availability?: components["schemas"]["Availability"];
                     stockQty?: number | null;
+                    stockVisibility?: components["schemas"]["StockVisibility"];
                     /** @default false */
                     bargainEnabled?: boolean;
                     /** @default 92 */
@@ -4192,6 +5065,7 @@ export interface operations {
                     price?: number;
                     availability?: components["schemas"]["Availability"];
                     stockQty?: number | null;
+                    stockVisibility?: components["schemas"]["StockVisibility"];
                     bargainEnabled?: boolean;
                     minOfferPercent?: number;
                     isActive?: boolean;
@@ -4364,7 +5238,7 @@ export interface operations {
                         /** @enum {string} */
                         deliveryMethod: "STORE_PICKUP" | "VENDOR_DELIVERY";
                         /** @enum {string} */
-                        paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY";
+                        paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
                         deliveryAddress?: string;
                         /** Format: uuid */
                         addressId?: string;
@@ -4661,7 +5535,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Bargain information (the shop's minimum stays private). */
+            /** @description Bargain information (the shop's minimum stays private). During a running flash deal listPrice is the deal price and the offer range is based on it. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5585,6 +6459,8 @@ export interface operations {
                     name: string;
                     /** Format: uuid */
                     parentId?: string | null;
+                    /** @description Order of top-level categories on the home page (lower first). */
+                    sortOrder?: number;
                 };
             };
         };
@@ -5646,6 +6522,8 @@ export interface operations {
                     name?: string;
                     /** Format: uuid */
                     parentId?: string | null;
+                    /** @description Order of top-level categories on the home page (lower first). */
+                    sortOrder?: number;
                 };
             };
         };
@@ -7777,6 +8655,1198 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listHomeBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The banners to show. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["PublicBanner"][];
+                    };
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    adminListBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every banner by sortOrder. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminBanner"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminCreateBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["BannerFields"] & {
+                    /**
+                     * Format: binary
+                     * @description Photo banner. JPG, PNG or WebP, max 3 MB.
+                     */
+                    image?: string;
+                    /**
+                     * Format: binary
+                     * @description Video banner. MP4 or WebM, max 20 MB.
+                     */
+                    video?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBannerResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description The photo is larger than 3 MB, the video larger than 20 MB, or the request larger than 25 MB. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The photo is too small. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    adminReorderBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description All banners in their new order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminBanner"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminDeleteBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminUpdateBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["BannerFields"] & {
+                    /**
+                     * Format: binary
+                     * @description Makes it a photo banner. JPG, PNG or WebP, max 3 MB.
+                     */
+                    image?: string;
+                    /**
+                     * Format: binary
+                     * @description Makes it a video banner. MP4 or WebM, max 20 MB.
+                     */
+                    video?: string;
+                };
+                "application/json": components["schemas"]["BannerFields"];
+            };
+        };
+        responses: {
+            /** @description The updated banner. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBannerResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The photo is larger than 3 MB, the video larger than 20 MB, or the request larger than 25 MB. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The photo is too small. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listFlashDeals: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The running deals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["FlashDealCard"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    ownerListDeals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["DealShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All deals of the shop, latest end first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["FlashDeal"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ownerCreateDeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["DealShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    listingId: string;
+                    dealPrice: number;
+                    /** Format: date-time */
+                    startsAt: string;
+                    /** Format: date-time */
+                    endsAt: string;
+                    /** @description Units sold at the deal price; null = no limit. */
+                    stockLimit?: number | null;
+                    /** @default true */
+                    isActive?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlashDealResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The listing already has an active deal in that period. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ownerDeleteDeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["DealShopId"];
+                id: components["parameters"]["DealId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ownerUpdateDeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["DealShopId"];
+                id: components["parameters"]["DealId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    dealPrice?: number;
+                    /** Format: date-time */
+                    startsAt?: string;
+                    /** Format: date-time */
+                    endsAt?: string;
+                    stockLimit?: number | null;
+                    isActive?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated deal. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlashDealResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Another active deal overlaps that period. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListDeals: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of deals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["FlashDeal"][];
+                        meta: {
+                            pagination?: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminDeleteDeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DealId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listFollowingFeed: {
+        parameters: {
+            query?: {
+                scope?: "followed" | "unfollowed";
+                page?: components["parameters"]["Page"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of product cards. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ProductCard"][];
+                        meta: {
+                            pagination: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyFollowedShops: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The followed shops. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            /** Format: uuid */
+                            id: string;
+                            slug: string;
+                            name: string;
+                            logoUrl: string | null;
+                            /** Format: date-time */
+                            followedAt: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listFoodItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The menu. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["FoodItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createFoodOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    itemId: string;
+                    quantity: number;
+                    name: string;
+                    phone: string;
+                    address: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The order, with the server's price. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodOrderResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The item is not available right now. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMyFoodOrders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The orders (at most 100). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["FoodOrder"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminListFoodOrders: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["FoodOrderStatus"];
+                page?: components["parameters"]["Page"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of orders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminFoodOrder"][];
+                        meta: {
+                            pagination: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminUpdateFoodOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FoodId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["FoodOrderStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description The updated order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodOrderResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminListFoodItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every item by sortOrder. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminFoodItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminCreateFoodItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoodItemInput"] & Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFoodItemResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminDeleteFoodItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FoodId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminUpdateFoodItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FoodId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoodItemInput"] & Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description The updated item. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFoodItemResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTolets: {
+        parameters: {
+            query?: {
+                type?: components["schemas"]["ToletType"];
+                /** @description Part of the area name, any letter case. */
+                area?: string;
+                page?: components["parameters"]["Page"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of listings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["Tolet"][];
+                        meta: {
+                            pagination: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    createTolet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    type: components["schemas"]["ToletType"];
+                    title: string;
+                    marketName?: string;
+                    floor?: string;
+                    area: string;
+                    address: string;
+                    /** @description BDT per month */
+                    rent: number;
+                    advance?: number;
+                    sizeSqft?: number;
+                    /**
+                     * Format: date
+                     * @description YYYY-MM-DD, from today (Bangladesh time) up to one year ahead.
+                     */
+                    availableFrom: string;
+                    contactName: string;
+                    contactPhone: string;
+                    description?: string;
+                    /** @description Honeypot. Must stay empty. */
+                    website?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Received; waiting for review. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            status: "PENDING";
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMyTolets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My requests, newest first (at most 100). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["OwnTolet"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteMyTolet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ToletId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminListTolets: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ToletStatus"];
+                page?: components["parameters"]["Page"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of requests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminTolet"][];
+                        meta: {
+                            pagination: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminReviewTolet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ToletId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "APPROVED" | "REJECTED";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The reviewed request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["OwnTolet"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminListOrders: {
+        parameters: {
+            query?: {
+                status?: "CONFIRMED" | "READY_FOR_PICKUP" | "OUT_FOR_DELIVERY" | "COMPLETED" | "CANCELLED";
+                page?: components["parameters"]["Page"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of orders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminOrder"][];
+                        meta: {
+                            pagination: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminUpdateOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status?: "READY_FOR_PICKUP" | "OUT_FOR_DELIVERY" | "COMPLETED" | "CANCELLED";
+                    /** @enum {string} */
+                    paymentStatus?: "PAID" | "REFUNDED";
+                };
+            };
+        };
+        responses: {
+            /** @description The updated order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminOrder"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createToletInquiry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ToletId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    phone: string;
+                    /**
+                     * Format: date
+                     * @description YYYY-MM-DD, from today (Bangladesh time) up to 90 days ahead.
+                     */
+                    preferredDate: string;
+                    preferredTime: components["schemas"]["ToletInquiryTime"];
+                    message?: string;
+                    /** @description Honeypot. Must stay empty. */
+                    website?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Received. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    adminListToletInquiries: {
+        parameters: {
+            query?: {
+                /** @description Leave out for all. */
+                status?: components["schemas"]["ToletInquiryStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The requests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ToletInquiry"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminUpdateToletInquiry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["ToletInquiryStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description The updated request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ToletInquiry"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
         };
     };

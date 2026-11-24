@@ -2,22 +2,63 @@ import { ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import { Arcade } from "@/components/brand/arcade";
-import { ProductCard, ProductCardSkeleton } from "@/components/catalog/product-card";
+import {
+  ProductCard,
+  ProductCardSkeleton,
+} from "@/components/catalog/product-card";
 import { CountUp } from "@/components/charts/arch-bars";
 import { Reveal } from "@/components/motion/reveal";
 import { MarketDoor } from "@/components/shop/market-cards";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/routing";
 import type { ProductCardData } from "@/lib/api/catalog";
-import { getLatestProducts, getMarkets } from "@/lib/api/catalog-cache";
+import {
+  getBanners,
+  getLatestProducts,
+  getMarkets,
+} from "@/lib/api/catalog-cache";
 import type { Market } from "@/lib/api/shops";
 import { OwnerStrip } from "@/components/owner/owner-strip";
+import { CategoriesSection, FlashDealsSection, NewArrivalsSection } from "@/components/home/home-sections";
+import { FoodCorner } from "@/components/home/food-corner";
+import { ToletSection } from "@/components/home/tolet-section";
+import { StoreFeed } from "@/components/home/store-feed";
+import { BannerSlider, type Slide } from "@/components/home/banner-slider";
+import { safeMediaUrl } from "@/lib/api/storefront";
 
 type Props = { params: Promise<{ locale: string }> };
 
 const GRID = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4";
+// Admin-managed banners in the page language. On an API error the slider shows its built-in ones.
+async function HomeBanners({ locale }: { locale: string }) {
+  let slides: Slide[] = [];
+  try {
+    const bn = locale === "bn";
+    slides = (await getBanners()).flatMap((b) => {
+      const image = safeMediaUrl(b.imageUrl);
+      const video = safeMediaUrl(b.videoUrl);
+      if (!image && !video) return [];
+      return [
+        {
+          id: b.id,
+          image,
+          video,
+          href: b.href,
+          title: bn ? b.titleBn : b.titleEn,
+          text: bn ? b.textBn : b.textEn,
+          cta: bn ? b.ctaBn : b.ctaEn,
+        },
+      ];
+    });
+  } catch {
+    // the rest of the home page still works
+  }
+  return <BannerSlider slides={slides} />;
+}
+
 // pt-2: room for the doors to lift on hover/focus without being cut off by the scroll row.
-const DOORS = "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pt-2 pb-2 md:mx-0 md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:px-0";
+const DOORS =
+  "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pt-2 pb-2 md:mx-0 md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:px-0";
 
 // The markets with the most shops, from the 10-minute market cache: 8 (two full rows on desktop)
 // when there are at least 8, otherwise up to 4. "All markets" above leads to the rest.
@@ -28,7 +69,9 @@ async function MarketDoors() {
   } catch {
     return null; // the rest of the home page still works
   }
-  const top = [...markets].sort((a, b) => b.shopCount - a.shopCount).slice(0, markets.length >= 8 ? 8 : 4);
+  const top = [...markets]
+    .sort((a, b) => b.shopCount - a.shopCount)
+    .slice(0, markets.length >= 8 ? 8 : 4);
   if (top.length === 0) return null;
 
   return (
@@ -44,7 +87,10 @@ function MarketDoorsSkeleton() {
   return (
     <div className={DOORS} aria-hidden>
       {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="aspect-3/4 skeleton w-44 shrink-0 rounded-t-full rounded-b-sm md:w-auto" />
+        <div
+          key={i}
+          className="aspect-3/4 skeleton w-44 shrink-0 rounded-t-full rounded-b-sm md:w-auto"
+        />
       ))}
     </div>
   );
@@ -82,7 +128,19 @@ function LatestSkeleton() {
 }
 
 /** Section heading; its gold underline draws from the centre outward when it scrolls into view. */
-function SectionHeading({ id, title, text, href, link }: { id: string; title: string; text: string; href?: string; link?: string }) {
+function SectionHeading({
+  id,
+  title,
+  text,
+  href,
+  link,
+}: {
+  id: string;
+  title: string;
+  text: string;
+  href?: string;
+  link?: string;
+}) {
   return (
     <Reveal className="relative flex items-end justify-between gap-4 pb-3">
       <div className="flex flex-col gap-1">
@@ -92,12 +150,18 @@ function SectionHeading({ id, title, text, href, link }: { id: string; title: st
         <p className="type-body text-ink-secondary">{text}</p>
       </div>
       {href && link && (
-        <Link href={href} className="type-body-medium flex shrink-0 items-center gap-1 text-brand underline-offset-4 hover:underline">
+        <Link
+          href={href}
+          className="type-body-medium flex shrink-0 items-center gap-1 text-brand underline-offset-4 hover:underline"
+        >
           {link}
           <ChevronRight className="size-4" aria-hidden />
         </Link>
       )}
-      <span aria-hidden className="line-grow absolute inset-x-0 bottom-0 h-px bg-gold" />
+      <span
+        aria-hidden
+        className="line-grow absolute inset-x-0 bottom-0 h-px bg-gold"
+      />
     </Reveal>
   );
 }
@@ -121,8 +185,16 @@ async function MarketStats({ locale }: { locale: string }) {
   return (
     <dl className="hero-after flex items-stretch justify-center gap-8 md:gap-14">
       {stats.map(({ label, value }, i) => (
-        <div key={label} className={cn("flex flex-col-reverse items-center gap-1", i > 0 && "border-l border-gold pl-8 md:pl-14")}>
-          <dt className="type-caption tracking-[0.12em] text-ink-muted uppercase">{label}</dt>
+        <div
+          key={label}
+          className={cn(
+            "flex flex-col-reverse items-center gap-1",
+            i > 0 && "border-l border-gold pl-8 md:pl-14",
+          )}
+        >
+          <dt className="type-caption tracking-[0.12em] text-ink-muted uppercase">
+            {label}
+          </dt>
           <dd className="font-heading text-[2.5rem] leading-none text-brand md:text-[3rem]">
             <CountUp value={value} locale={locale} />
           </dd>
@@ -153,8 +225,19 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <div className="flex flex-col gap-14 md:gap-20">
-            {/* Owners and staff only: their shop's to-dos (renders nothing for everyone else) */}
+      {/* Owners and staff only: their shop's to-dos (renders nothing for everyone else) */}
       <OwnerStrip />
+      {/* Same shape as the slider, so the page does not jump when the banners arrive */}
+      <Suspense
+        fallback={
+          <div
+            className="aspect-[3/2] w-full animate-pulse rounded-md bg-subtle sm:aspect-[3/1]"
+            aria-hidden
+          />
+        }
+      >
+        <HomeBanners locale={locale} />
+      </Suspense>
       <section className="flex flex-col items-center gap-6 pt-4 text-center md:gap-8 md:pt-10">
         {/* Words rise in one by one (whole words only, so Bangla letters are never split) */}
         <h1 className="type-display no-wipe max-w-3xl text-ink">
@@ -168,7 +251,9 @@ export default async function HomePage({ params }: Props) {
               </span>,
             ])}
         </h1>
-        <p className="type-body hero-after max-w-xl text-ink-secondary">{t("heroText")}</p>
+        <p className="type-body hero-after max-w-xl text-ink-secondary">
+          {t("heroText")}
+        </p>
         <Link
           href="/search"
           className="type-body-medium hero-after flex h-12 w-full items-center justify-center rounded-sm bg-action px-8 text-primary-foreground hover:bg-action-hover focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none sm:w-fit"
@@ -197,6 +282,10 @@ export default async function HomePage({ params }: Props) {
         </Suspense>
       </section>
 
+      <FlashDealsSection />
+      <CategoriesSection />
+      <NewArrivalsSection />
+
       <section aria-labelledby="latest-title" className="flex flex-col gap-5">
         <SectionHeading
           id="latest-title"
@@ -210,9 +299,17 @@ export default async function HomePage({ params }: Props) {
         </Suspense>
       </section>
 
+      <StoreFeed />
+      <FoodCorner />
+      <ToletSection />
+
       {/* How it works: three numbered arches that grow up as you reach them, joined by a gold line */}
       <section aria-labelledby="how-title" className="flex flex-col gap-8">
-        <SectionHeading id="how-title" title={t("howTitle")} text={t("howText")} />
+        <SectionHeading
+          id="how-title"
+          title={t("howTitle")}
+          text={t("howText")}
+        />
         <div className="relative">
           <Reveal className="absolute inset-x-[16.6%] top-8 hidden md:block">
             <span aria-hidden className="line-grow block h-px bg-gold" />
@@ -260,12 +357,20 @@ export default async function HomePage({ params }: Props) {
           aria-labelledby="closing-title"
           className="relative isolate flex flex-col items-center gap-4 overflow-hidden rounded-md bg-brand px-6 py-12 text-center md:py-16"
         >
-          <span aria-hidden className="arch-up absolute bottom-0 -left-6 -z-10 h-[85%] w-32 rounded-t-full border border-b-0 border-gold/50 md:left-10 md:w-40" />
-          <span aria-hidden className="arch-up absolute -right-6 bottom-0 -z-10 h-[85%] w-32 rounded-t-full border border-b-0 border-gold/50 md:right-10 md:w-40" />
+          <span
+            aria-hidden
+            className="arch-up absolute bottom-0 -left-6 -z-10 h-[85%] w-32 rounded-t-full border border-b-0 border-gold/50 md:left-10 md:w-40"
+          />
+          <span
+            aria-hidden
+            className="arch-up absolute -right-6 bottom-0 -z-10 h-[85%] w-32 rounded-t-full border border-b-0 border-gold/50 md:right-10 md:w-40"
+          />
           <h2 id="closing-title" className="type-h2 text-primary-foreground">
             {t("closingTitle")}
           </h2>
-          <p className="type-body max-w-md text-primary-foreground/85">{t("closingText")}</p>
+          <p className="type-body max-w-md text-primary-foreground/85">
+            {t("closingText")}
+          </p>
           <div className="mt-2 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link
               href="/search"
@@ -283,9 +388,6 @@ export default async function HomePage({ params }: Props) {
               href="/account/orders"
               className="type-body-medium flex h-12 items-center justify-center rounded-sm border border-gold px-8 text-primary-foreground hover:bg-brand-alt focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-brand focus-visible:outline-none"
             >
-            
-
-            
               {t("closingTrack")}
             </Link>
           </div>
