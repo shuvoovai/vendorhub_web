@@ -307,7 +307,7 @@ function ItemRow({ item, locale, busy, removing, error, onQuantity, onRemove }: 
   const t = useTranslations("Cart");
   const image = safeMediaUrl(item.product.image);
   const title = item.product.title;
-  const blocked = item.problem === "UNAVAILABLE" || item.problem === "OUT_OF_STOCK";
+  const blocked = item.problem === "UNAVAILABLE" || item.problem === "OUT_OF_STOCK" || item.problem === "VARIANT_REQUIRED";
   const canIncrease = !busy && !blocked && !item.bargainApplied && item.quantity < MAX_QTY_PER_ITEM;
   const stepButton =
     "flex size-11 items-center justify-center text-ink-secondary hover:bg-subtle focus-visible:bg-subtle focus-visible:outline-none disabled:text-ink-disabled disabled:hover:bg-transparent";
@@ -338,6 +338,7 @@ function ItemRow({ item, locale, busy, removing, error, onQuantity, onRemove }: 
         <Link href={`/products/${item.product.slug}?listing=${item.listingId}`} className="type-body-medium line-clamp-2 text-ink hover:text-brand">
           {title}
         </Link>
+        {item.variant && <p className="type-caption text-ink-secondary">{item.variant.label}</p>}
         <div className="flex flex-wrap items-center gap-2">
           <AvailabilityBadge value={item.availability} />
           {item.bargainApplied && (

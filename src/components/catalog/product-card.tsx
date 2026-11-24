@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { PriceTicket } from "@/components/brand/price-ticket";
+import { AdminOnly } from "@/components/auth/admin-only";
 import { AddToCartButton } from "@/components/cart/add-to-cart";
 import { AvailabilityBadge } from "@/components/catalog/availability-badge";
 import { Reveal } from "@/components/motion/reveal";
@@ -100,17 +101,34 @@ export function ProductCard({ product }: { product: ProductCardData }) {
       </div>
 
       <div className="flex flex-wrap items-baseline gap-1.5 px-1">
-        {product.shopCount > 1 && <span className="type-caption text-ink-muted">{t("from")}</span>}
+        {/* Shop count / "from" price: admins only */}
+        {product.shopCount > 1 && (
+          <AdminOnly>
+            <span className="type-caption text-ink-muted">{t("from")}</span>
+          </AdminOnly>
+        )}
         <PriceTicket amount={product.lowestPrice} msrp={product.msrp} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2 px-1">
         <AvailabilityBadge value={product.availability} />
-        <span className="type-caption text-ink-muted">{t("shops", { count: product.shopCount })}</span>
+        <AdminOnly>
+          <span className="type-caption text-ink-muted">{t("shops", { count: product.shopCount })}</span>
+        </AdminOnly>
       </div>
     </Link>
     {/* Cheapest shop's offer. Without one (older API), the card links to the product to choose a shop. */}
-    {product.bestListingId && (
+    {product.bestListingId && product.hasVariants && (
+      <div className="px-1 pt-1">
+        <Link
+          href={`/products/${product.slug}?listing=${product.bestListingId}`}
+          className="type-caption flex h-11 w-full items-center justify-center rounded-sm border border-brand bg-card px-2 text-brand hover:bg-subtle focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none"
+        >
+          {t("chooseOptions")}
+        </Link>
+      </div>
+    )}
+    {product.bestListingId && !product.hasVariants && (
       <div className="px-1 pt-1">
         <AddToCartButton
           listingId={product.bestListingId}

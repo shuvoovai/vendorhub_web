@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useId, useState, type FormEvent } from "react";
 import { CategoryIcon } from "@/components/catalog/product-card";
+import { VariantsEditor, buildVariants, initialVariants } from "@/components/owner/variants-editor";
 import { parseAmount } from "@/lib/api/bargains";
 import { ApiError } from "@/lib/api/core";
 import {
@@ -167,7 +168,8 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
   const [visibility, setVisibility] = useState<StockVisibility>(listing?.stockVisibility ?? "PUBLIC");
   const [offers, setOffers] = useState(listing?.bargainEnabled ?? false);
   const [minOffer, setMinOffer] = useState(String(listing?.minOfferPercent ?? 92));
-  const [errors, setErrors] = useState<Partial<Record<"price" | "stock" | "minOffer" | "form", string>>>({});
+  const [variants, setVariants] = useState(() => initialVariants(listing));
+  const [errors, setErrors] = useState<Partial<Record<"price" | "stock" | "minOffer" | "variants" | "form", string>>>({});
 
   const save = useMutation({
     mutationFn: (input: ListingInput) => (listing ? updateListing(shopId, listing.id, input) : createListing(shopId, product.id, input)),
@@ -190,20 +192,25 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
     const priceValue = parseAmount(price);
     if (priceValue === null || priceValue < 1 || priceValue > MAX_PRICE) next.price = t("errors.price");
     const stockValue = parseAmount(stock);
-    if (track && (stockValue === null || stockValue > MAX_STOCK)) next.stock = t("errors.stock");
+    // With variants the stock is counted per variant (the server adds them up).
+    if (track && !variants.enabled && (stockValue === null || stockValue > MAX_STOCK)) next.stock = t("errors.stock");
+    const built = buildVariants(variants, track, MAX_PRICE, MAX_STOCK);
+    if ("error" in built) next.variants = t(built.error);
     const minValue = parseAmount(minOffer);
     if (offers && (minValue === null || minValue < 50 || minValue > 100)) next.minOffer = t("errors.minOffer");
     setErrors(next);
-    if (Object.keys(next).length > 0 || priceValue === null) return;
+    if (Object.keys(next).length > 0 || priceValue === null || "error" in built) return;
 
     save.mutate({
       price: priceValue,
-      stockQty: track ? (stockValue ?? 0) : null,
+      stockQty: track ? (variants.enabled ? built.variants.reduce((n, v) => n + (v.isActive ? (v.stockQty ?? 0) : 0), 0) : (stockValue ?? 0)) : null,
       ...(!track && { availability: manual }),
       // Sent only when the API knows the field or the owner picked "Only vendors", so saving works on an older API
       ...(track && (visibility !== "PUBLIC" || listing?.stockVisibility) && { stockVisibility: visibility }),
       bargainEnabled: offers,
       minOfferPercent: offers ? (minValue ?? 92) : (listing?.minOfferPercent ?? 92),
+      // Sent when variants are on, or to turn them off on a listing that had them
+      ...((variants.enabled || listing?.variantOptions?.length) && built),
     });
   }
 
@@ -253,7 +260,7 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
         </div>
       </fieldset>
 
-      {track ? (
+      {track && !variants.enabled ? (
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-stock`} className="type-body-medium text-ink">
             {t("form.stockQty")}
@@ -296,7 +303,7 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
             </div>
           </fieldset>
         </div>
-      ) : (
+      ) : track ? null : (
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${id}-availability`} className="type-body-medium text-ink">
             {t("form.availability")}
@@ -314,6 +321,13 @@ export function ListingForm({ shopId, product, listing, onSaved, onCancel }: For
             ))}
           </select>
         </div>
+      )}
+
+      <VariantsEditor value={variants} onChange={setVariants} track={track} basePrice={price} />
+      {errors.variants && (
+        <p role="alert" className="type-caption text-error">
+          {errors.variants}
+        </p>
       )}
 
       <label className="flex cursor-pointer items-center gap-3 rounded-md border border-line-strong p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand">

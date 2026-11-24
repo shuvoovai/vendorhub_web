@@ -25,6 +25,7 @@ export type ProductCardData = {
   bargainAvailable: boolean;
   createdAt: string;
   bestListingId?: string | null; // the cheapest in-stock shop offer: "Add to cart" / "Buy now" on the card
+  hasVariants?: boolean; // that offer needs a choice (color, size…): the card links to the product instead
 };
 
 export type ProductSort = "newest" | "price_asc" | "price_desc";
@@ -61,6 +62,14 @@ export type ListingShop = {
   rating: { average: number | null; count: number };
 };
 
+// A variant the customer can pick. Stock numbers are never public, only availability.
+export type PublicVariant = {
+  id: string;
+  options: Record<string, string>; // e.g. { Color: "Red", Size: "M" }
+  price: number; // final price from the server
+  availability: Availability;
+};
+
 export type Listing = {
   id: string;
   price: number;
@@ -68,6 +77,8 @@ export type Listing = {
   bargainEnabled: boolean;
   discountPercent: number | null;
   shop: ListingShop;
+  variantOptions?: { name: string; values: string[] }[]; // empty or missing = no variants
+  variants?: PublicVariant[];
 };
 
 export type ProductDetail = {

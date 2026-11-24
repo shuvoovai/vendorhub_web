@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import { CategoryIcon } from "@/components/catalog/product-card";
 import { SelectedListingCard } from "@/components/product/listing-card";
+import { AdminOnly } from "@/components/auth/admin-only";
 import { OtherShops } from "@/components/product/other-shops";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { Link } from "@/i18n/routing";
@@ -151,7 +152,10 @@ async function ProductView({ params, searchParams }: Props) {
             <TryOn slug={product.slug} productId={product.id} />
           </Suspense>
 
-          <OtherShops slug={product.slug} listings={otherListings} />
+          {/* Comparing shops: admins only */}
+          <AdminOnly>
+            <OtherShops slug={product.slug} listings={otherListings} />
+          </AdminOnly>
 
           <div className="flex flex-col border-t border-line">
             {specs.length > 0 && (

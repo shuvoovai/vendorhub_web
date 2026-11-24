@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   listingId: string;
+  variantId?: string | null; // the chosen color/size… when the listing has variants
   productSlug?: string; // kept for callers; guests can add without logging in
   disabled?: boolean; // out of stock
   image?: string | null; // product photo: a tiny copy flies to the cart icon
@@ -34,7 +35,7 @@ function errorKey(err: unknown): string {
 }
 
 const base =
-  "flex w-full items-center justify-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-safe:transition-colors";
+  "flex w-full items-center whitespace-nowrap justify-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-safe:transition-colors";
 const solid = "bg-action text-primary-foreground hover:bg-action-hover";
 const outline = "border border-brand bg-card text-brand hover:bg-subtle";
 
@@ -53,7 +54,7 @@ function visibleCartTarget(): DOMRect | null {
   return null;
 }
 
-export function AddToCartButton({ listingId, disabled = false, image = null, compact = false }: Props) {
+export function AddToCartButton({ listingId, variantId = null, disabled = false, image = null, compact = false }: Props) {
   const t = useTranslations("Cart");
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -116,7 +117,7 @@ export function AddToCartButton({ listingId, disabled = false, image = null, com
   // Variables = which button was pressed ("add" stays here, "buy" goes on to checkout).
   const add = useMutation<Cart, unknown, "add" | "buy">({
     // Only the listing and quantity are sent; the price is decided by the server.
-    mutationFn: () => addToCart(listingId, 1),
+    mutationFn: () => addToCart(listingId, 1, variantId),
     onMutate: () => setMessage(null),
     onSuccess: (cart, mode) => {
       if (mode === "buy") {
@@ -135,7 +136,7 @@ export function AddToCartButton({ listingId, disabled = false, image = null, com
 
   return (
     <div className="flex flex-col gap-2">
-      <div className={cn("grid gap-2", compact ? "grid-cols-2" : "sm:grid-cols-2")}>
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => add.mutate("buy")}

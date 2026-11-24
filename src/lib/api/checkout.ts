@@ -49,7 +49,7 @@ export type Order = {
     addressLine: string;
     verificationLevel: VerificationLevel;
   };
-  items: { id: string; title: string; unitPrice: number; quantity: number; lineTotal: number; bargained: boolean; productId?: string; productSlug?: string }[];
+  items: { id: string; title: string; unitPrice: number; quantity: number; lineTotal: number; bargained: boolean; variantLabel?: string | null; productId?: string; productSlug?: string }[];
 
 };
 

@@ -272,6 +272,7 @@ function OrderCard({ order, checkoutId }: { order: Order; checkoutId: string }) 
           <li key={item.id} className="type-body flex justify-between gap-3 text-ink-secondary">
             <span className="min-w-0">
               {item.quantity} × {item.title}
+{item.variantLabel && ` (${item.variantLabel})`}
               {item.bargained && (
                 <span className="type-caption ml-2 rounded-sm bg-highlight-soft px-1.5 py-0.5 text-highlight">🤝 {t("bargained")}</span>
               )}

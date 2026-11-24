@@ -2882,6 +2882,8 @@ export interface components {
              * @description The listing "add to cart" uses: the cheapest active, in-stock listing of an active, verified shop (ties: newest), among the listings this list counts (e.g. only that shop on a shop page). Null if none.
              */
             bestListingId?: string | null;
+            /** @description True when the bestListingId listing has active variants (the cart then needs a variantId). */
+            hasVariants?: boolean;
             /** Format: date-time */
             createdAt?: string;
         };
@@ -2915,6 +2917,9 @@ export interface components {
             stockQty: number | null;
             availability: components["schemas"]["Availability"];
             bargainEnabled?: boolean;
+            variantOptions?: components["schemas"]["VariantOptions"];
+            /** @description Only active combinations; [] when the listing has no variants. No stock numbers. */
+            variants?: components["schemas"]["PublicVariant"][];
             discountPercent?: number | null;
             /** @description A running flash deal on this listing; the cart and checkout charge dealPrice. */
             deal?: {
@@ -3133,6 +3138,9 @@ export interface components {
             bargainEnabled?: boolean;
             minOfferPercent?: number;
             isActive?: boolean;
+            variantOptions?: components["schemas"]["VariantOptions"];
+            /** @description Every combination, active ones first, with its stock. */
+            variants?: components["schemas"]["OwnerVariant"][];
             product?: {
                 [key: string]: unknown;
             };
@@ -3144,7 +3152,7 @@ export interface components {
             success?: boolean;
             data?: components["schemas"]["ShopListing"];
         };
-        /** @description The cart grouped by shop, with live prices, problems flagged per item, and whether checkout is possible. Each item's unitPrice is computed by the server: the lowest of the listing price, a running flash deal (dealApplied true, dealEndsAt set; only while deal units are left for that quantity) and an accepted bargain (bargainApplied). Checkout charges the same price. Each item also has stockQty: the number only when the listing's stockVisibility allows this user, else null; a quantity above the real stock gets 409 without the number. */
+        /** @description The cart grouped by shop, with live prices, problems flagged per item, and whether checkout is possible. Each item's unitPrice is computed by the server: the lowest of the listing price, a running flash deal (dealApplied true, dealEndsAt set; only while deal units are left for that quantity) and an accepted bargain (bargainApplied). Checkout charges the same price. Each item also has stockQty: the number only when the listing's stockVisibility allows this user, else null; a quantity above the real stock gets 409 without the number. Each item has variant ({ id, label } such as "Red / M", or null); a variant line uses the variant's price and stock. problem is one of UNAVAILABLE, OUT_OF_STOCK, INSUFFICIENT_STOCK, VARIANT_REQUIRED (the listing got variants after the line was added: remove it and add a variant) or null. */
         Cart: {
             shops?: {
                 [key: string]: unknown;
@@ -3163,7 +3171,7 @@ export interface components {
             success?: boolean;
             data?: components["schemas"]["Cart"];
         };
-        /** @description One shop's part of a checkout (a sub-order). */
+        /** @description One shop's part of a checkout (a sub-order). Each item has variantLabel (e.g. "Red / M", a snapshot taken at checkout) or null; checkout takes the variant's stock and the listing total, a cancel gives both back. */
         Order: {
             /** Format: uuid */
             id?: string;
@@ -3543,6 +3551,8 @@ export interface components {
             quantity: number;
             lineTotal: number;
             bargained: boolean;
+            /** @description The variant at the moment of ordering (snapshot), e.g. "Red / M"; null without variants. */
+            variantLabel: string | null;
         };
         CustomerOrder: {
             /** Format: uuid */
@@ -3687,6 +3697,8 @@ export interface components {
              * @description The listing "add to cart" uses: the cheapest active, in-stock listing of an active, verified shop (ties: newest), among the listings this list counts (e.g. only that shop on a shop page). Null if none.
              */
             bestListingId?: string | null;
+            /** @description True when the bestListingId listing has active variants (the cart then needs a variantId). */
+            hasVariants?: boolean;
             /** Format: date-time */
             createdAt: string;
             dealPrice: number;
@@ -3902,6 +3914,66 @@ export interface components {
                 contactName: string;
                 contactPhone: string;
             };
+        };
+        VariantOption: {
+            /** @example Color */
+            name: string;
+            /**
+             * @example [
+             *       "Red",
+             *       "Blue"
+             *     ]
+             */
+            values: string[];
+        };
+        /** @description At most 3 options; names unique (any letter case), values unique per option. [] means no variants. */
+        VariantOptions: components["schemas"]["VariantOption"][];
+        /** @description One combination. options has exactly one value for each option, taken from that option's values (letter case is ignored and the option's own spelling is stored). Combinations must be unique. */
+        VariantInput: {
+            /**
+             * @example {
+             *       "Color": "Red",
+             *       "Size": "M"
+             *     }
+             */
+            options: {
+                [key: string]: string;
+            };
+            /** @description null or left out = the listing price. */
+            price?: number | null;
+            /** @description Required when the listing counts stock (its stockQty is not null); must be empty when it does not. */
+            stockQty?: number | null;
+            /** @default true */
+            isActive: boolean;
+        };
+        OwnerVariant: {
+            /** Format: uuid */
+            id: string;
+            options: {
+                [key: string]: string;
+            };
+            price: number | null;
+            stockQty: number | null;
+            isActive: boolean;
+        };
+        /** @description An offered combination. Never includes a stock number. */
+        PublicVariant: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @example {
+             *       "Color": "Red",
+             *       "Size": "M"
+             *     }
+             */
+            options: {
+                [key: string]: string;
+            };
+            /** @example Red / M */
+            label: string;
+            /** @description The final price before deals and bargains (variant price, else the listing price). */
+            price: number;
+            availability: components["schemas"]["Availability"];
         };
     };
     responses: {
@@ -5033,6 +5105,9 @@ export interface operations {
                     availability?: components["schemas"]["Availability"];
                     stockQty?: number | null;
                     stockVisibility?: components["schemas"]["StockVisibility"];
+                    variantOptions?: components["schemas"]["VariantOptions"];
+                    /** @description Send together with variantOptions. Upserted by combination: existing ids are kept, combinations not sent become inactive (never deleted), [] and [] turn variants off. At least one must be active. With counted stock the listing's stockQty becomes the sum of the active variants' stock. */
+                    variants?: components["schemas"]["VariantInput"][];
                     /** @default false */
                     bargainEnabled?: boolean;
                     /** @default 92 */
@@ -5099,6 +5174,9 @@ export interface operations {
                     availability?: components["schemas"]["Availability"];
                     stockQty?: number | null;
                     stockVisibility?: components["schemas"]["StockVisibility"];
+                    variantOptions?: components["schemas"]["VariantOptions"];
+                    /** @description Send together with variantOptions. Upserted by combination: existing ids are kept, combinations not sent become inactive (never deleted), [] and [] turn variants off. At least one must be active. With counted stock the listing's stockQty becomes the sum of the active variants' stock. */
+                    variants?: components["schemas"]["VariantInput"][];
                     bargainEnabled?: boolean;
                     minOfferPercent?: number;
                     isActive?: boolean;
@@ -5176,6 +5254,11 @@ export interface operations {
                 "application/json": {
                     /** Format: uuid */
                     listingId: string;
+                    /**
+                     * Format: uuid
+                     * @description Required when the listing has active variants (400 without it; 404 when it is not an active variant of this listing); must be left out for a listing without variants (400). Price and stock come from the variant. Each (listing, variant) is its own cart line.
+                     */
+                    variantId?: string;
                     /** @default 1 */
                     quantity?: number;
                 };
@@ -5763,7 +5846,17 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: uuid
+                     * @description The bargain is per listing; a listing with active variants still needs the variant here (400 without it).
+                     */
+                    variantId?: string;
+                };
+            };
+        };
         responses: {
             /** @description The updated cart. */
             200: {
@@ -8604,6 +8697,8 @@ export interface operations {
                                  * @description The listing "add to cart" uses: the cheapest active, in-stock listing of an active, verified shop (ties: newest), among the listings this list counts (e.g. only that shop on a shop page). Null if none.
                                  */
                                 bestListingId: string | null;
+                                /** @description True when the bestListingId listing has active variants (the cart then needs a variantId). */
+                                hasVariants?: boolean;
                                 lowestPrice: number;
                                 shopCount: number;
                                 /** @enum {string} */

@@ -88,7 +88,7 @@ export type ShopOrder = {
   total: number;
   createdAt: string;
   customer: { name: string; phone: string | null };
-  items: { id: string; title: string; unitPrice: number; quantity: number; lineTotal: number; bargained: boolean }[];
+  items: { id: string; title: string; unitPrice: number; quantity: number; lineTotal: number; bargained: boolean; variantLabel?: string | null }[];
   nextStatuses: NextStatus[]; // which buttons to show, decided by the backend
 };
 

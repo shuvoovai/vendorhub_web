@@ -442,6 +442,7 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, onChange
           <li key={item.id} className="type-body flex justify-between gap-3 text-ink-secondary">
             <span className="min-w-0 truncate">
               {item.quantity} × {item.product.title}
+              {item.variant && ` (${item.variant.label})`}
             </span>
             <span className="type-price shrink-0">{formatTaka(item.lineTotal, locale)}</span>
           </li>

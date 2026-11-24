@@ -134,6 +134,7 @@ export function OrdersManager() {
                     {o.items.map((i) => (
                       <li key={i.id} className="truncate">
                         {i.quantity} × {i.title}
+{i.variantLabel && ` (${i.variantLabel})`}
                       </li>
                     ))}
                   </ul>

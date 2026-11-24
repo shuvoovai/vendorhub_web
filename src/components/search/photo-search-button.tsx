@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminOnly } from "@/components/auth/admin-only";
 import { useMutation } from "@tanstack/react-query";
 import { Camera, Images, LoaderCircle, Search, ImageOff } from "lucide-react";
 import Image from "next/image";
@@ -136,7 +137,7 @@ export function PhotoSearchButton() {
                       <span className="type-body-medium line-clamp-2 text-ink">{p.title}</span>
                       <span className="type-caption mt-auto text-ink-secondary">
                         {p.lowestPrice !== null && <span className="type-price text-ink">{t("fromPrice", { price: formatTaka(p.lowestPrice, locale) })}</span>}
-                        {p.shopCount > 0 && ` · ${t("shops", { count: p.shopCount })}`}
+                        {p.shopCount > 0 && <AdminOnly>{` · ${t("shops", { count: p.shopCount })}`}</AdminOnly>}
                       </span>
                     </Link>
                   </li>

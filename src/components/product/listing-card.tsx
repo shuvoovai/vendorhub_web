@@ -2,7 +2,8 @@ import { ChevronRight, MapPin, Store, Truck } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { PriceTicket } from "@/components/brand/price-ticket";
 import { VerificationSeal } from "@/components/brand/verification-seal";
-import { AddToCartButton } from "@/components/cart/add-to-cart";
+import { AdminOnly } from "@/components/auth/admin-only";
+import { ListingPurchase } from "@/components/product/variant-picker";
 import { AvailabilityBadge } from "@/components/catalog/availability-badge";
 import { MakeOfferButton } from "@/components/bargain/offer-sheet";
 import { Link } from "@/i18n/routing";
@@ -114,21 +115,20 @@ export function SelectedListingCard({
       <p className="type-caption text-ink-secondary">{trust.join(" · ")}</p>
 
       {otherCount > 0 && (
+        <AdminOnly>
         <a href="#other-shops" className="type-body-medium inline-flex items-center gap-1 self-start text-brand underline-offset-4 hover:underline">
           {t("compareLink", { count: otherCount })}
           <ChevronRight className="size-4" aria-hidden />
         </a>
+        </AdminOnly>
       )}
 
         <div className="flex flex-col gap-2 border-t border-line pt-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-          <div className="flex-1">
-            <AddToCartButton listingId={listing.id} productSlug={productSlug} disabled={outOfStock} image={image} />
-          </div>
+        {/* Buy now + Add to cart on one row; the offer button gets its own full row below */}
+        <div className="flex flex-col gap-3">
+          <ListingPurchase listing={listing} productSlug={productSlug} disabled={outOfStock} image={image} />
           {listing.bargainEnabled && !outOfStock && (
-            <div className="flex-1">
-              <MakeOfferButton listingId={listing.id} productSlug={productSlug} />
-            </div>
+            <MakeOfferButton listingId={listing.id} productSlug={productSlug} />
           )}
         </div>
         {outOfStock && <p className="type-caption text-ink-muted">{t("outOfStock")}</p>}

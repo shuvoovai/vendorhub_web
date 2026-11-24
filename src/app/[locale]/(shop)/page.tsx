@@ -1,4 +1,4 @@
-import { ChevronRight, Handshake, Scale, ShieldCheck } from "lucide-react";
+import { ChevronRight, Handshake, ShieldCheck } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import { Arcade } from "@/components/brand/arcade";
@@ -213,7 +213,6 @@ export default async function HomePage({ params }: Props) {
 
   const features = [
     { icon: ShieldCheck, title: t("verifiedTitle"), text: t("verifiedText") },
-    { icon: Scale, title: t("compareTitle"), text: t("compareText") },
     { icon: Handshake, title: t("bargainTitle"), text: t("bargainText") },
   ];
   const steps = [
@@ -336,8 +335,8 @@ export default async function HomePage({ params }: Props) {
         </div>
       </section>
 
-      {/* Why Vendors Hub: three cards, each icon pops in once its card has arrived */}
-      <section className="grid gap-4 md:grid-cols-3 md:gap-6">
+      {/* Why Vendors Hub: two cards, each icon pops in once its card has arrived */}
+      <section className="grid gap-4 md:grid-cols-2 md:gap-6">
         {features.map(({ icon: Icon, title, text }) => (
           <Reveal key={title} className="flex">
             <div className="flex w-full flex-col gap-3 rounded-md border border-line bg-card p-5 shadow-card">

@@ -6,6 +6,20 @@ import type { components } from "./schema";
 type Availability = components["schemas"]["Availability"];
 
 /** Availability the shop may set by hand when it doesn't count stock. */
+// ---------- Variants (color, size, …) ----------
+// A listing may offer options, e.g. Color: Red, Blue and Size: S, M, L.
+// Each combination is one variant with its own stock and (optionally) its own price.
+export const MAX_VARIANT_OPTIONS = 3;
+export const MAX_OPTION_VALUES = 20;
+export type VariantOption = { name: string; values: string[] };
+export type VariantInput = {
+  options: Record<string, string>; // e.g. { Color: "Red", Size: "M" }
+  price: number | null; // null = the listing price
+  stockQty: number | null; // null when the listing doesn't count stock
+  isActive: boolean;
+};
+export type OwnerVariant = VariantInput & { id: string };
+
 export type ManualAvailability = "AVAILABLE" | "LIMITED" | "OUT_OF_STOCK";
 
 // Who sees the number of items in stock: everyone, only vendors (shop teams), or only this shop's team.
@@ -26,6 +40,8 @@ export type OwnerListing = {
   createdAt: string;
   updatedAt: string;
   product: { id: string; slug: string; title: string; msrp: number | null; images: string[] };
+  variantOptions?: VariantOption[]; // empty or missing = no variants
+  variants?: OwnerVariant[];
 };
 
 /** A product from the public catalog search, for "Add a product". */
@@ -45,6 +61,9 @@ export type ListingInput = {
   stockVisibility?: StockVisibility;
   bargainEnabled: boolean;
   minOfferPercent: number;
+  // Both empty = no variants. The server matches existing variants by their options.
+  variantOptions?: VariantOption[];
+  variants?: VariantInput[];
 };
 
 export const listingKeys = {

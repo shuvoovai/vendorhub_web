@@ -25,7 +25,7 @@
     "prev": "Previous slide",
     "next": "Next slide",
     "title1": "Real shops, real prices",
-    "text1": "Compare prices from verified shops across Dhaka.",
+    "text1": "Real prices from verified shops across Dhaka.",
     "cta1": "Start searching",
     "title2": "Explore the markets",
     "text2": "From Bashundhara to New Market, all in one place.",
@@ -237,7 +237,7 @@
   },
   "Home": {
     "heroTitle": "Buy from real shops you can visit",
-    "heroText": "Compare prices from verified physical shops in Dhaka, make an offer, then pick up in store or get it delivered.",
+    "heroText": "Shop from verified physical shops in Dhaka, make an offer, then pick up in store or get it delivered.",
     "cta": "Start searching",
     "verifiedTitle": "Verified physical shops",
     "verifiedText": "Every shop is checked: documents, business and a real address you can walk into.",
@@ -503,7 +503,8 @@
     "latestTitle": "New in Dhaka's shops",
     "latestText": "The newest products in Dhaka's shops. Each card shows the lowest price among all shops selling it.",
     "seeAll": "See all",
-    "loadError": "Products couldn't load right now. Try again in a moment."
+    "loadError": "Products couldn't load right now. Try again in a moment.",
+    "chooseOptions": "Choose options"
   },
   "Search": {
     "metaTitle": "Search",
@@ -593,7 +594,13 @@
     "specifications": "Specifications",
     "description": "Description",
     "noListings": "No shop sells this product right now.",
-    "loadError": "This product couldn't load right now. Try again in a moment."
+    "loadError": "This product couldn't load right now. Try again in a moment.",
+    "variants": {
+      "unavailable": "not available",
+      "priceFor": "{label}: {price}",
+      "soldOut": "This combination is sold out. Try another choice.",
+      "choose": "Choose {option} to continue."
+    }
   },
   "Shop": {
     "bannerAlt": "Photo of {name}",
@@ -736,7 +743,8 @@
     "problems": {
       "UNAVAILABLE": "No longer sold by this shop. Remove it to continue.",
       "OUT_OF_STOCK": "Out of stock at this shop. Remove it, or look for it in another shop.",
-      "INSUFFICIENT_STOCK": "The shop can't supply this many. Lower the quantity."
+      "INSUFFICIENT_STOCK": "The shop can't supply this many. Lower the quantity.",
+      "VARIANT_REQUIRED": "This item now comes in options (color, size…). Remove it and add it again with your choice."
     },
     "subtotal": "Subtotal",
     "options": "At checkout: {options}",
@@ -1333,7 +1341,35 @@
     "notTeamText": "Listings are managed by the shop's owner or staff.",
     "noShopTitle": "Set up your shop first",
     "noShopText": "Once your shop exists, you can add products here.",
-    "setup": "Go to shop setup"
+    "setup": "Go to shop setup",
+    "variants": {
+      "title": "Variants",
+      "enable": "This product comes in variants (color, size…)",
+      "enableHint": "Customers must pick one before ordering. Each combination has its own stock and, if you like, its own price.",
+      "optionName": "Option",
+      "optionNamePlaceholder": "e.g. Color or Size",
+      "values": "Choices",
+      "valuesPlaceholder": "Type a choice, press Enter (e.g. Red, Blue)",
+      "addValue": "Add",
+      "addOption": "Add another option",
+      "removeOption": "Remove option {name}",
+      "removeValue": "Remove {value}",
+      "combos": "{count, plural, one {# variant} other {# variants}}",
+      "combosHint": "Leave price empty to use the main price. Untick a variant you don't have.",
+      "price": "Price",
+      "stock": "Stock",
+      "on": "On",
+      "priceFor": "Price for {label}",
+      "stockFor": "Stock for {label}",
+      "errors": {
+        "none": "Add at least one option with choices, or turn variants off.",
+        "incomplete": "Every option needs a name and at least one choice.",
+        "duplicateName": "Two options have the same name.",
+        "price": "Check the variant prices (whole taka).",
+        "stock": "Enter the stock for every variant that is on.",
+        "allOff": "Turn on at least one variant."
+      }
+    }
   },
   "OwnerNav": {
     "label": "Shop sections",
