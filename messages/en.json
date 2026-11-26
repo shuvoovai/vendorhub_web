@@ -16,7 +16,11 @@
     "account": "Account",
     "login": "Log in",
     "language": "Language",
-    "yourAccount": "Your account ({name})"
+    "yourAccount": "Your account ({name})",
+    "menu": "Menu",
+    "menuText": "More pages",
+    "tolet": "To-let",
+    "track": "Track your order"
   },
   "Banners": {
     "label": "Featured offers",
@@ -500,11 +504,14 @@
     "bargain": "Bargain",
     "bargainAvailable": "Bargaining available",
     "noPhoto": "No photo yet",
-    "latestTitle": "New in Dhaka's shops",
-    "latestText": "The newest products in Dhaka's shops. Each card shows the lowest price among all shops selling it.",
+    "latestTitle": "All products",
+    "latestText": "Every product in Dhaka shops, newest first. Each card shows the lowest price among all shops selling it.",
     "seeAll": "See all",
     "loadError": "Products couldn't load right now. Try again in a moment.",
-    "chooseOptions": "Choose options"
+    "chooseOptions": "Choose options",
+    "nextPage": "Next page",
+    "slidePrev": "Previous products",
+    "slideNext": "Next products"
   },
   "Search": {
     "metaTitle": "Search",
@@ -765,7 +772,9 @@
       "generic": "Couldn't update your cart. Try again in a moment."
     },
     "buyNow": "Buy now",
-    "addShort": "Add to cart"
+    "addShort": "Add to cart",
+    "floatingItems": "{count, plural, one {# item} other {# items}}",
+    "floatingLabel": "Cart: {count} items, {total}"
   },
   "Checkout": {
     "metaTitle": "Checkout",
@@ -797,7 +806,7 @@
     "cod": "Cash on delivery",
     "codHint": "Pay when it arrives.",
     "online": "Pay online",
-    "onlineHint": "Pay right after placing the order.",
+    "onlineHint": "bKash, Nagad or card.",
     "subtotal": "Subtotal",
     "deliveryFee": "Delivery",
     "free": "Free",
@@ -845,7 +854,21 @@
       "generic": "Your orders couldn't be placed. Nothing was charged. Try again in a moment."
     },
     "bkash": "bKash",
-    "bkashHint": "Pay with bKash. We'll confirm your payment."
+    "bkashHint": "From your bKash account.",
+    "onlineMethod": "Pay with",
+    "nagad": "Nagad",
+    "nagadHint": "From your Nagad account.",
+    "card": "Card",
+    "cardHint": "Visa, Mastercard, Amex.",
+    "cardNote": "After you place the order, you'll enter your card on the secure payment page. We never see or store your card number.",
+    "walletNumber": "{name} account number",
+    "walletHint": "The number you'll pay from.",
+    "trxId": "Transaction ID (optional)",
+    "trxIdHint": "Only if you've already sent the money.",
+    "walletErrors": {
+      "number": "Enter a valid 11-digit mobile number (01…).",
+      "trxId": "A transaction ID has 8–12 letters and digits."
+    }
   },
   "Order": {
     "metaTitle": "Order confirmation",
@@ -880,7 +903,8 @@
       "ONLINE": "Online payment",
       "PAY_AT_STORE": "Pay at the shop",
       "CASH_ON_DELIVERY": "Cash on delivery",
-      "BKASH": "bKash"
+      "BKASH": "bKash",
+      "NAGAD": "Nagad"
     },
     "pickupAt": "Pick up at: {place}",
     "deliverTo": "Delivery to: {address}",
@@ -2628,5 +2652,125 @@
   "LoginDialog": {
     "title": "Log in to continue",
     "text": "Your cart stays as it is. After logging in you go straight on to checkout."
+  },
+  "Footer": {
+    "tagline": "Dhaka's markets, online. Verified shops, real prices, pick up or get it delivered.",
+    "shop": "Shop",
+    "help": "Help & info",
+    "allMarkets": "All markets",
+    "allProducts": "All products",
+    "tolet": "To-let",
+    "track": "Track your order",
+    "contact": "Contact us",
+    "returns": "Return policy",
+    "privacy": "Privacy policy",
+    "vision": "Our vision",
+    "rights": "© Vendors Hub. All rights reserved."
+  },
+  "Info": {
+    "privacy": {
+      "title": "Privacy policy",
+      "intro": "What we collect, why we collect it, and how you stay in control.",
+      "sections": [
+        {
+          "h": "What we collect",
+          "p": "Your name, phone number, email and delivery addresses, your orders, carts and bargains, and the shops you follow. Shop owners also share their shop and verification documents."
+        },
+        {
+          "h": "Why we use it",
+          "p": "To run your account, place and deliver orders, let shops contact you about an order, prevent fraud, and improve the site. We do not sell your data."
+        },
+        {
+          "h": "Who sees it",
+          "p": "A shop only sees what it needs to fulfil your order: your name, phone and delivery address. Our team sees it to verify shops and solve problems. Verification documents are private to our team."
+        },
+        {
+          "h": "Payments and photos",
+          "p": "Card details are entered on the payment provider's page; we never see or store your card number. Photos you use for search by photo are not stored."
+        },
+        {
+          "h": "Cookies",
+          "p": "We only use the cookies needed to keep you logged in and to remember a guest cart. No advertising cookies."
+        },
+        {
+          "h": "Your choices",
+          "p": "You can edit your profile and addresses at any time, and delete your account from your account settings. Questions? Use the Contact us page."
+        }
+      ]
+    },
+    "returns": {
+      "title": "Return policy",
+      "intro": "Each shop sets its own return window. Here is how returns work on Vendors Hub.",
+      "sections": [
+        {
+          "h": "Return window",
+          "p": "The shop's return window (in days) starts when your order is completed. Some shops do not accept returns; this is shown before you buy."
+        },
+        {
+          "h": "How to ask for a return",
+          "p": "Open My orders, choose the order and request a return with the reason and photos. The shop answers in the app and you are notified."
+        },
+        {
+          "h": "Condition",
+          "p": "Items must be unused, complete and in their original packaging, unless they arrived damaged or not as described."
+        },
+        {
+          "h": "Refunds",
+          "p": "After the shop accepts the return and receives the item, the refund is made the same way you paid. Cash payments are refunded by the shop."
+        },
+        {
+          "h": "Not returnable",
+          "p": "Food, personal care and hygiene items, and products made or altered to order, unless they arrived damaged."
+        },
+        {
+          "h": "When you disagree",
+          "p": "If you and the shop cannot agree, open a dispute from the order. Our team reviews it and decides fairly."
+        }
+      ]
+    },
+    "vision": {
+      "title": "Our vision",
+      "intro": "Bring every trusted shop in Dhaka's markets online, without losing what makes them special.",
+      "sections": [
+        {
+          "h": "Local shops first",
+          "p": "Dhaka's markets are full of skilled sellers. We give them a simple way to reach customers across the city, so small shops can grow next to big brands."
+        },
+        {
+          "h": "Trust you can see",
+          "p": "Every shop is checked by our team, and the verification badge shows how far. Prices are always the shop's real prices, and you can compare shops for the same product."
+        },
+        {
+          "h": "The market feeling",
+          "p": "Bargain with the shop, pick up in person, or get it delivered. The best of shopping in the market, from your phone."
+        },
+        {
+          "h": "Built for Bangladesh",
+          "p": "Bangla and English, cash on delivery, bKash and Nagad, and pages that work on any phone and any connection."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Contact us",
+      "intro": "We are here to help with orders, shops and your account.",
+      "phone": "Hotline",
+      "email": "Email",
+      "orderHelp": "Help with an order",
+      "track": "Track your order",
+      "sections": [
+        {
+          "h": "Help with an order",
+          "p": "Open My orders to see the status of each order. The shop's phone number is shown on the order, so you can contact the shop directly."
+        },
+        {
+          "h": "A problem with a shop",
+          "p": "Request a return or open a dispute from the order. Our team reviews every dispute."
+        },
+        {
+          "h": "Shop owners",
+          "p": "Want to sell on Vendors Hub? Open your shop from the owner area. Our team verifies it before it goes live."
+        }
+      ]
+    }
   }
 }

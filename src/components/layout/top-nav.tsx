@@ -10,6 +10,7 @@ import { AccountMenu } from "@/components/layout/account-menu";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { LanguageSwitch } from "@/components/layout/language-switch";
+import { NavMenu } from "@/components/layout/nav-menu";
 
 
 
@@ -129,6 +130,7 @@ export function TopNav() {
       </a>
 
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 md:h-[72px] md:gap-6 md:px-10">
+        <NavMenu />
         <Link
           href="/"
           aria-label={t("homeLink")}

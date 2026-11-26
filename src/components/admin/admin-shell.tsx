@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, LoaderCircle, ShieldCheck, Store,LayoutDashboard, Package,ScrollText,Tags,Scale, Users, ChartColumn , Building2, UtensilsCrossed, House, ShoppingBag, GalleryHorizontal, type LucideIcon } from "lucide-react";
+import { ArrowLeft, LoaderCircle, ShieldCheck, Store,LayoutDashboard, Package,ScrollText,Tags,Scale, Users, ChartColumn , Building2, House, ShoppingBag, GalleryHorizontal, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Suspense, type ReactNode } from "react";
 import { useSession } from "@/components/app-providers";
@@ -20,7 +20,8 @@ const NAV: { href: string; key: "queue" | "markets" | "products" | "audit" | "ca
     { href: "/admin/disputes", key: "disputes", icon: Scale },
   { href: "/admin/users", key: "users", icon: Users },
   { href: "/admin/shops", key: "shops", icon: Building2 },
-  { href: "/admin/food-orders", key: "foodOrders", icon: UtensilsCrossed },
+  // Food orders: hidden for now (page still at /admin/food-orders). Put this line back to show it.
+  // { href: "/admin/food-orders", key: "foodOrders", icon: UtensilsCrossed },
   { href: "/admin/tolets", key: "tolets", icon: House },
 ];
 

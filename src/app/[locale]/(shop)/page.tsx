@@ -20,15 +20,15 @@ import {
 import type { Market } from "@/lib/api/shops";
 import { OwnerStrip } from "@/components/owner/owner-strip";
 import { CategoriesSection, FlashDealsSection, NewArrivalsSection } from "@/components/home/home-sections";
-import { FoodCorner } from "@/components/home/food-corner";
-import { ToletSection } from "@/components/home/tolet-section";
 import { StoreFeed } from "@/components/home/store-feed";
 import { BannerSlider, type Slide } from "@/components/home/banner-slider";
+import { PAGE_SIZE } from "@/lib/search-params";
 import { safeMediaUrl } from "@/lib/api/storefront";
 
 type Props = { params: Promise<{ locale: string }> };
 
 const GRID = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4";
+
 // Admin-managed banners in the page language. On an API error the slider shows its built-in ones.
 async function HomeBanners({ locale }: { locale: string }) {
   let slides: Slide[] = [];
@@ -108,11 +108,23 @@ async function LatestProducts() {
   }
   if (products.length === 0) return null;
 
+  // A full row means there may be more: page 2 of all products starts right after these.
   return (
-    <div className={GRID}>
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className={GRID}>
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+      {products.length >= PAGE_SIZE && (
+        <Link
+          href="/search?page=2"
+          className="type-body-medium flex h-11 items-center justify-center gap-2 self-center rounded-sm border border-brand px-6 text-brand hover:bg-subtle focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+        >
+          {t("nextPage")}
+          <ChevronRight className="size-4" aria-hidden />
+        </Link>
+      )}
     </div>
   );
 }
@@ -299,8 +311,6 @@ export default async function HomePage({ params }: Props) {
       </section>
 
       <StoreFeed />
-      <FoodCorner />
-      <ToletSection />
 
       {/* How it works: three numbered arches that grow up as you reach them, joined by a gold line */}
       <section aria-labelledby="how-title" className="flex flex-col gap-8">

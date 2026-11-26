@@ -8,8 +8,9 @@ export type OrderStatus = components["schemas"]["OrderStatus"];
 export type PaymentStatus = components["schemas"]["PaymentStatus"];
 
 export type DeliveryMethod = "STORE_PICKUP" | "VENDOR_DELIVERY";
-// BKASH: no gateway yet. The order is placed with payment PENDING; the admin marks it paid.
-export type PaymentMethod = "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
+// ONLINE = card on the gateway's own page. BKASH / NAGAD: no gateway yet; the order is placed with
+// payment PENDING and the admin marks it paid. NAGAD needs the backend update (checkout.schema.js).
+export type PaymentMethod = "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH" | "NAGAD";
 
 export const ORDER_STATUSES: OrderStatus[] = [
   "PLACED",
@@ -61,6 +62,9 @@ export type ShopChoice = {
   deliveryMethod: DeliveryMethod;
   paymentMethod: PaymentMethod;
   deliveryAddress?: string;
+  // bKash / Nagad only: the customer's wallet number and, if already sent, the transaction ID.
+  // Card details are never sent to us: they are typed on the payment gateway's page.
+  paymentDetails?: { walletNumber: string; transactionId?: string };
 };
 
 export const checkoutKeys = {

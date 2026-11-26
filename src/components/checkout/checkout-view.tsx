@@ -29,19 +29,40 @@ import { addressKeys, listAddresses } from "@/lib/api/addresses";
 
 
 
-type Choice = { delivery: DeliveryMethod; payment: PaymentMethod };
+// "Pay online" opens a second choice: bKash, Nagad or card.
+type PayChoice = "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "ONLINE";
+type OnlineMethod = "BKASH" | "NAGAD" | "CARD";
+type Choice = { delivery: DeliveryMethod; payment: PayChoice; online: OnlineMethod; wallet: string; trxId: string };
+type WalletErrors = { wallet?: string; trxId?: string };
 type Address = { line1: string; area: string; city: string; phone: string };
 type AddressErrors = Partial<Record<keyof Address | "all", string>>;
 
-// Backend rules: pay at store only with pickup, cash on delivery only with delivery, online and bKash with either.
-const PAYMENTS: Record<DeliveryMethod, PaymentMethod[]> = {
-  STORE_PICKUP: ["PAY_AT_STORE", "BKASH", "ONLINE"],
-  VENDOR_DELIVERY: ["CASH_ON_DELIVERY", "BKASH", "ONLINE"],
+// Backend rules: pay at store only with pickup, cash on delivery only with delivery, online with either.
+const PAYMENTS: Record<DeliveryMethod, PayChoice[]> = {
+  STORE_PICKUP: ["PAY_AT_STORE", "ONLINE"],
+  VENDOR_DELIVERY: ["CASH_ON_DELIVERY", "ONLINE"],
 };
+const ONLINE_METHODS: OnlineMethod[] = ["BKASH", "NAGAD", "CARD"];
+const TRX_ID = /^[A-Za-z0-9]{8,12}$/;
+const isWallet = (c: Choice) => c.payment === "ONLINE" && c.online !== "CARD";
 
 function defaultChoice(group: CartGroup): Choice {
   const delivery: DeliveryMethod = group.shop.supportsPickup ? "STORE_PICKUP" : "VENDOR_DELIVERY";
-  return { delivery, payment: PAYMENTS[delivery][0] };
+  return { delivery, payment: PAYMENTS[delivery][0], online: "BKASH", wallet: "", trxId: "" };
+}
+
+// What the API gets: card = ONLINE (gateway page after ordering), wallets by name.
+function apiPayment(c: Choice): PaymentMethod {
+  if (c.payment !== "ONLINE") return c.payment;
+  return c.online === "CARD" ? "ONLINE" : c.online;
+}
+
+function checkWallet(c: Choice, t: (key: string) => string): WalletErrors {
+  const errors: WalletErrors = {};
+  if (!BD_MOBILE.test(normalizePhone(c.wallet))) errors.wallet = t("walletErrors.number");
+  const trx = c.trxId.trim();
+  if (trx && !TRX_ID.test(trx)) errors.trxId = t("walletErrors.trxId");
+  return errors;
 }
 
 // Same format the backend uses for saved addresses: "line1, area, city. Phone: 01…"
@@ -92,6 +113,7 @@ export function CheckoutView() {
   const [address, setAddress] = useState<Address>({ line1: "", area: "", city: "Dhaka", phone: "" });
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [walletErrors, setWalletErrors] = useState<Record<string, WalletErrors>>({});
   // Order count and total at the moment of placing (the server empties the cart right after).
   const [submitted, setSubmitted] = useState<{ count: number; total: number } | null>(null);
   // One key per checkout attempt: a retry with the same choices reuses it (no double orders).
@@ -208,12 +230,13 @@ export function CheckoutView() {
   function setChoice(group: CartGroup, next: Partial<Choice>) {
     setChoices((prev) => {
       const current = prev[group.shop.id] ?? defaultChoice(group);
-      const delivery = next.delivery ?? current.delivery;
+      const merged = { ...current, ...next };
       // switching delivery keeps the payment if allowed, otherwise picks the first allowed one
-      const allowed = PAYMENTS[delivery];
-      const wanted = next.payment ?? current.payment;
-      return { ...prev, [group.shop.id]: { delivery, payment: allowed.includes(wanted) ? wanted : allowed[0] } };
+      const allowed = PAYMENTS[merged.delivery];
+      if (!allowed.includes(merged.payment)) merged.payment = allowed[0];
+      return { ...prev, [group.shop.id]: merged };
     });
+    setWalletErrors((prev) => ({ ...prev, [group.shop.id]: {} }));
     setFormError(null);
   }
 
@@ -230,14 +253,29 @@ export function CheckoutView() {
       if (Object.keys(errors).length > 0) return;
     }
 
+    // bKash / Nagad: a valid wallet number for every shop paid that way.
+    const wErrors: Record<string, WalletErrors> = {};
+    for (const group of shops) {
+      const choice = choiceFor(group);
+      if (isWallet(choice)) wErrors[group.shop.id] = checkWallet(choice, t);
+    }
+    setWalletErrors(wErrors);
+    if (Object.values(wErrors).some((e) => Object.keys(e).length > 0)) return;
+
     const deliveryAddress = deliveringCount > 0 ? composeAddress(filled) : undefined;
     const payload: ShopChoice[] = shops.map((group) => {
       const choice = choiceFor(group);
       return {
         shopId: group.shop.id,
         deliveryMethod: choice.delivery,
-        paymentMethod: choice.payment,
+        paymentMethod: apiPayment(choice),
         ...(choice.delivery === "VENDOR_DELIVERY" && { deliveryAddress }),
+        ...(isWallet(choice) && {
+          paymentDetails: {
+            walletNumber: normalizePhone(choice.wallet),
+            ...(choice.trxId.trim() && { transactionId: choice.trxId.trim().toUpperCase() }),
+          },
+        }),
       };
     });
     const payloadText = JSON.stringify(payload);
@@ -264,6 +302,7 @@ export function CheckoutView() {
             choice={choiceFor(group)}
             locale={locale}
             disabled={place.isPending}
+            walletErrors={walletErrors[group.shop.id] ?? {}}
             onChange={(next) => setChoice(group, next)}
           />
         ))}
@@ -402,11 +441,12 @@ type CardProps = {
   choice: Choice;
   locale: string;
   disabled: boolean;
+  walletErrors: WalletErrors;
   onChange: (next: Partial<Choice>) => void;
 };
 
 /** One shop's order (spec: SubOrderCard): delivery and payment choice, its own total. */
-function ShopOrderCard({ group, index, total, choice, locale, disabled, onChange }: CardProps) {
+function ShopOrderCard({ group, index, total, choice, locale, disabled, walletErrors, onChange }: CardProps) {
   const t = useTranslations("Checkout");
   const { shop } = group;
   const fee = choice.delivery === "VENDOR_DELIVERY" ? DELIVERY_FEE : 0;
@@ -417,11 +457,15 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, onChange
     { value: "STORE_PICKUP", label: t("pickup"), hint: t("pickupHint"), offered: shop.supportsPickup },
     { value: "VENDOR_DELIVERY", label: t("delivery"), hint: `${t("deliveryHint")} ${formatTaka(DELIVERY_FEE, locale)}`, offered: shop.supportsDelivery },
   ];
-  const paymentLabels: Record<PaymentMethod, { label: string; hint: string }> = {
+  const paymentLabels: Record<PayChoice, { label: string; hint: string }> = {
     PAY_AT_STORE: { label: t("payAtStore"), hint: t("payAtStoreHint") },
     CASH_ON_DELIVERY: { label: t("cod"), hint: t("codHint") },
     ONLINE: { label: t("online"), hint: t("onlineHint") },
+  };
+  const onlineLabels: Record<OnlineMethod, { label: string; hint: string }> = {
     BKASH: { label: t("bkash"), hint: t("bkashHint") },
+    NAGAD: { label: t("nagad"), hint: t("nagadHint") },
+    CARD: { label: t("card"), hint: t("cardHint") },
   };
 
   return (
@@ -481,6 +525,54 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, onChange
           ))}
         </div>
       </fieldset>
+
+      {choice.payment === "ONLINE" && (
+        <fieldset disabled={disabled} className="flex flex-col gap-3 rounded-md border border-line bg-surface p-3 md:p-4">
+          <legend className="type-body-medium px-1 text-ink">{t("onlineMethod")}</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {ONLINE_METHODS.map((method) => (
+              <Option
+                key={method}
+                name={`online-${shop.id}`}
+                checked={choice.online === method}
+                label={onlineLabels[method].label}
+                hint={onlineLabels[method].hint}
+                onSelect={() => onChange({ online: method })}
+              />
+            ))}
+          </div>
+          {choice.online === "CARD" ? (
+            <p className="type-caption flex gap-2 rounded-md bg-info-soft p-3 text-verified">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {t("cardNote")}
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField
+                label={t("walletNumber", { name: onlineLabels[choice.online].label })}
+                hint={t("walletHint")}
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={14}
+                placeholder="01XXXXXXXXX"
+                value={choice.wallet}
+                onChange={(e) => onChange({ wallet: e.target.value })}
+                error={walletErrors.wallet}
+              />
+              <TextField
+                label={t("trxId")}
+                hint={t("trxIdHint")}
+                autoComplete="off"
+                maxLength={12}
+                value={choice.trxId}
+                onChange={(e) => onChange({ trxId: e.target.value })}
+                error={walletErrors.trxId}
+              />
+            </div>
+          )}
+        </fieldset>
+      )}
 
       <dl className="flex flex-col gap-1 border-t border-line pt-3">
         <div className="type-body flex justify-between text-ink-secondary">

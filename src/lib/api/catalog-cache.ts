@@ -3,6 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { listProducts, type Brand, type Category, type ProductCardData } from "./catalog";
 import { publicGet } from "./public";
 import type { Market } from "./shops";
+import { PAGE_SIZE } from "@/lib/search-params";
 
 // Lists that rarely change: cached 10 minutes, served stale up to 5 minutes while refreshing.
 const SLOW_CHANGING = { stale: 300, revalidate: 600, expire: 3600 };
@@ -17,7 +18,7 @@ export async function getLatestProducts(): Promise<ProductCardData[]> {
   cacheLife({ stale: 60, revalidate: 60, expire: 600 }); // seconds
   cacheTag("products");
 
-  const { data } = await listProducts({ sort: "newest", availableOnly: true, limit: 8 }, { fresh: false });
+  const { data } = await listProducts({ sort: "newest", availableOnly: true, limit: PAGE_SIZE }, { fresh: false });
   return data;
 }
 

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { useSession } from "@/components/app-providers";
 import { ProductCard } from "@/components/catalog/product-card";
+import { ProductSlider } from "@/components/home/product-slider";
 import { Link } from "@/i18n/routing";
 import type { ProductCardData } from "@/lib/api/catalog";
 import { api } from "@/lib/api/client";
@@ -16,7 +17,7 @@ type Scope = "followed" | "unfollowed";
 const SCOPES: Scope[] = ["unfollowed", "followed"];
 const ICONS = { unfollowed: Compass, followed: Heart } as const;
 const GRID = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4";
-const LIMIT = 8;
+const LIMIT = 20; // shown in a sideways slider
 
 // Products from shops the user follows / doesn't follow. Guests see a login prompt on "Followed"
 // and the newest public products on "Not followed".
@@ -85,11 +86,11 @@ export function StoreFeed() {
         : message(t("emptyUnfollowed"));
   } else {
     body = (
-      <div className={GRID}>
+      <ProductSlider>
         {query.data.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
-      </div>
+      </ProductSlider>
     );
   }
 

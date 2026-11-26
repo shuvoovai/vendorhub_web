@@ -2,7 +2,8 @@
 // Everything from the URL is checked here; anything unexpected is ignored, never passed on.
 import type { ProductListQuery, ProductSort } from "@/lib/api/catalog";
 
-export const PAGE_SIZE = 24;
+// 40, the same as the home page row, so its "Next page" (page 2) starts right after it.
+export const PAGE_SIZE = 40;
 export const MAX_PRICE = 10_000_000; // ৳1,00,00,000
 const MAX_PAGE = 500;
 
