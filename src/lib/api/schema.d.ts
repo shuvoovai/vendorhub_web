@@ -550,7 +550,7 @@ export interface paths {
         put?: never;
         /**
          * Place the whole cart - one independent order per shop; safe to retry with Idempotency-Key
-         * @description Every shop in the cart needs one choice. Delivery needs deliveryAddress or addressId. With the optional header Idempotency-Key (a UUID v4 made by the client for this checkout), a repeated request with the same body returns the stored answer (header Idempotent-Replayed true) and creates nothing. Keys are per user and kept 24 hours. A failed checkout frees its key, so the same key can be used again after fixing the problem.
+         * @description Every shop in the cart needs one choice. Delivery needs deliveryAddress or addressId. BKASH and NAGAD need paymentDetails (the money goes to the merchant number from GET /api/v1/payment-options); every other method must not send it. With the optional header Idempotency-Key (a UUID v4 made by the client for this checkout), a repeated request with the same body returns the stored answer (header Idempotent-Replayed true) and creates nothing. Keys are per user and kept 24 hours. A failed checkout frees its key, so the same key can be used again after fixing the problem.
          */
         post: operations["checkout"];
         delete?: never;
@@ -2775,6 +2775,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payment-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where to send bKash / Nagad money (our merchant numbers)
+         * @description Public. For BKASH and NAGAD the customer sends the order total to this number from their own wallet, then gives the wallet number (and the TrxID if they have it) in paymentDetails at checkout. An admin checks the merchant account and marks the order PAID. null = that wallet is not offered right now. Card payments are ONLINE only, through the gateway's hosted page; card details are never accepted here.
+         */
+        get: operations["paymentOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3180,7 +3200,7 @@ export interface components {
             checkoutId?: string;
             status?: components["schemas"]["OrderStatus"];
             /** @enum {string} */
-            paymentMethod?: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
+            paymentMethod?: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH" | "NAGAD";
             paymentStatus?: components["schemas"]["PaymentStatus"];
             /** @enum {string} */
             deliveryMethod?: "STORE_PICKUP" | "VENDOR_DELIVERY";
@@ -3562,7 +3582,7 @@ export interface components {
             checkoutId: string;
             status: components["schemas"]["OrderStatus"];
             /** @enum {string} */
-            paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
+            paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH" | "NAGAD";
             paymentStatus: components["schemas"]["PaymentStatus"];
             /** @enum {string} */
             deliveryMethod: "STORE_PICKUP" | "VENDOR_DELIVERY";
@@ -3880,6 +3900,21 @@ export interface components {
             reviewedAt: string | null;
         };
         AdminOrder: components["schemas"]["CustomerOrder"] & {
+            /** @description Admin only. For BKASH / NAGAD the wallet the customer paid from and the TrxID, to find the money in the merchant account before marking the order PAID. Never in customer or shop answers. */
+            payments: {
+                /** Format: uuid */
+                id: string;
+                /** @description mock | bkash | nagad | manual */
+                provider: string;
+                amount: number;
+                status: components["schemas"]["PaymentStatus"];
+                /** @example 01712345678 */
+                walletNumber: string | null;
+                /** @example 9F3A1B2C4D */
+                transactionId: string | null;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
             customer: {
                 /** Format: uuid */
                 id: string;
@@ -3974,6 +4009,23 @@ export interface components {
             /** @description The final price before deals and bargains (variant price, else the listing price). */
             price: number;
             availability: components["schemas"]["Availability"];
+        };
+        WalletMerchant: {
+            /** @example 01XXXXXXXXX */
+            merchantNumber: string;
+        } | null;
+        /** @description Required for BKASH and NAGAD, not allowed for any other method. Shown only to admins, never logged. */
+        WalletPaymentDetails: {
+            /**
+             * @description The customer's bKash / Nagad number the money was sent from.
+             * @example 01712345678
+             */
+            walletNumber: string;
+            /**
+             * @description The TrxID from the wallet app (lowercase is accepted and stored in uppercase).
+             * @example 9F3A1B2C4D
+             */
+            transactionId?: string;
         };
     };
     responses: {
@@ -5358,7 +5410,8 @@ export interface operations {
                         /** @enum {string} */
                         deliveryMethod: "STORE_PICKUP" | "VENDOR_DELIVERY";
                         /** @enum {string} */
-                        paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH";
+                        paymentMethod: "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH" | "NAGAD";
+                        paymentDetails?: components["schemas"]["WalletPaymentDetails"];
                         deliveryAddress?: string;
                         /** Format: uuid */
                         addressId?: string;
@@ -10009,6 +10062,32 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    paymentOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The merchant numbers. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: {
+                            bkash: components["schemas"]["WalletMerchant"];
+                            nagad: components["schemas"]["WalletMerchant"];
+                        };
+                    };
+                };
+            };
         };
     };
 }

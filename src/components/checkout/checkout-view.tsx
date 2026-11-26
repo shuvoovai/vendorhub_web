@@ -14,6 +14,7 @@ import { cartKeys, getCart, type CartGroup } from "@/lib/api/cart";
 import {
   checkoutKeys,
   DELIVERY_FEE,
+  getPaymentOptions,
   placeOrders,
   type DeliveryMethod,
   type PaymentMethod,
@@ -44,6 +45,7 @@ const PAYMENTS: Record<DeliveryMethod, PayChoice[]> = {
 };
 const ONLINE_METHODS: OnlineMethod[] = ["BKASH", "NAGAD", "CARD"];
 const TRX_ID = /^[A-Za-z0-9]{8,12}$/;
+const WALLET = /^01[3-9]\d{8}$/;
 const isWallet = (c: Choice) => c.payment === "ONLINE" && c.online !== "CARD";
 
 function defaultChoice(group: CartGroup): Choice {
@@ -59,7 +61,7 @@ function apiPayment(c: Choice): PaymentMethod {
 
 function checkWallet(c: Choice, t: (key: string) => string): WalletErrors {
   const errors: WalletErrors = {};
-  if (!BD_MOBILE.test(normalizePhone(c.wallet))) errors.wallet = t("walletErrors.number");
+  if (!WALLET.test(normalizePhone(c.wallet))) errors.wallet = t("walletErrors.number");
   const trx = c.trxId.trim();
   if (trx && !TRX_ID.test(trx)) errors.trxId = t("walletErrors.trxId");
   return errors;
@@ -114,6 +116,7 @@ export function CheckoutView() {
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [walletErrors, setWalletErrors] = useState<Record<string, WalletErrors>>({});
+  const paymentOptions = useQuery({ queryKey: ["payment-options"], queryFn: getPaymentOptions, staleTime: 5 * 60_000 });
   // Order count and total at the moment of placing (the server empties the cart right after).
   const [submitted, setSubmitted] = useState<{ count: number; total: number } | null>(null);
   // One key per checkout attempt: a retry with the same choices reuses it (no double orders).
@@ -221,7 +224,16 @@ export function CheckoutView() {
   }
 
   // Current choice per shop (defaults until the customer changes something)
-  const choiceFor = (group: CartGroup) => choices[group.shop.id] ?? defaultChoice(group);
+  // A wallet is offered only when the API gives its merchant number; card is always there.
+  const merchants: Record<"BKASH" | "NAGAD", string | null> = {
+    BKASH: paymentOptions.data?.bkash?.merchantNumber ?? null,
+    NAGAD: paymentOptions.data?.nagad?.merchantNumber ?? null,
+  };
+  const onlineMethods = ONLINE_METHODS.filter((m) => m === "CARD" || merchants[m]);
+  const choiceFor = (group: CartGroup): Choice => {
+    const c = choices[group.shop.id] ?? defaultChoice(group);
+    return onlineMethods.includes(c.online) ? c : { ...c, online: onlineMethods[0] };
+  };
   const deliveringCount = shops.filter((g) => choiceFor(g).delivery === "VENDOR_DELIVERY").length;
   const deliveryFees = deliveringCount * DELIVERY_FEE;
   const total = totals.subtotal + deliveryFees;
@@ -229,7 +241,7 @@ export function CheckoutView() {
 
   function setChoice(group: CartGroup, next: Partial<Choice>) {
     setChoices((prev) => {
-      const current = prev[group.shop.id] ?? defaultChoice(group);
+      const current = prev[group.shop.id] ?? choiceFor(group);
       const merged = { ...current, ...next };
       // switching delivery keeps the payment if allowed, otherwise picks the first allowed one
       const allowed = PAYMENTS[merged.delivery];
@@ -303,6 +315,8 @@ export function CheckoutView() {
             locale={locale}
             disabled={place.isPending}
             walletErrors={walletErrors[group.shop.id] ?? {}}
+            onlineMethods={onlineMethods}
+            merchants={merchants}
             onChange={(next) => setChoice(group, next)}
           />
         ))}
@@ -442,11 +456,13 @@ type CardProps = {
   locale: string;
   disabled: boolean;
   walletErrors: WalletErrors;
+  onlineMethods: OnlineMethod[];
+  merchants: Record<"BKASH" | "NAGAD", string | null>;
   onChange: (next: Partial<Choice>) => void;
 };
 
 /** One shop's order (spec: SubOrderCard): delivery and payment choice, its own total. */
-function ShopOrderCard({ group, index, total, choice, locale, disabled, walletErrors, onChange }: CardProps) {
+function ShopOrderCard({ group, index, total, choice, locale, disabled, walletErrors, onlineMethods, merchants, onChange }: CardProps) {
   const t = useTranslations("Checkout");
   const { shop } = group;
   const fee = choice.delivery === "VENDOR_DELIVERY" ? DELIVERY_FEE : 0;
@@ -530,7 +546,7 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, walletEr
         <fieldset disabled={disabled} className="flex flex-col gap-3 rounded-md border border-line bg-surface p-3 md:p-4">
           <legend className="type-body-medium px-1 text-ink">{t("onlineMethod")}</legend>
           <div className="grid gap-2 sm:grid-cols-3">
-            {ONLINE_METHODS.map((method) => (
+            {onlineMethods.map((method) => (
               <Option
                 key={method}
                 name={`online-${shop.id}`}
@@ -547,9 +563,18 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, walletEr
               {t("cardNote")}
             </p>
           ) : (
+            <div className="flex flex-col gap-3">
+            <p className="type-body rounded-md border border-gold bg-highlight-soft/40 p-3 text-ink">
+              {t("sendTo", {
+                amount: formatTaka(group.subtotal + fee, locale),
+                number: merchants[choice.online] ?? "",
+                wallet: onlineLabels[choice.online].label,
+              })}
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <TextField
                 label={t("walletNumber", { name: onlineLabels[choice.online].label })}
+                name={`wallet-${shop.id}`}
                 hint={t("walletHint")}
                 type="tel"
                 inputMode="numeric"
@@ -562,6 +587,8 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, walletEr
               />
               <TextField
                 label={t("trxId")}
+                name={`trx-${shop.id}`}
+                autoCapitalize="characters"
                 hint={t("trxIdHint")}
                 autoComplete="off"
                 maxLength={12}
@@ -569,6 +596,7 @@ function ShopOrderCard({ group, index, total, choice, locale, disabled, walletEr
                 onChange={(e) => onChange({ trxId: e.target.value })}
                 error={walletErrors.trxId}
               />
+            </div>
             </div>
           )}
         </fieldset>

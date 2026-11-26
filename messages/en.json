@@ -861,14 +861,15 @@
     "card": "Card",
     "cardHint": "Visa, Mastercard, Amex.",
     "cardNote": "After you place the order, you'll enter your card on the secure payment page. We never see or store your card number.",
-    "walletNumber": "{name} account number",
-    "walletHint": "The number you'll pay from.",
-    "trxId": "Transaction ID (optional)",
-    "trxIdHint": "Only if you've already sent the money.",
+    "walletNumber": "Your {name} number",
+    "walletHint": "The number you send the money from.",
+    "trxId": "Transaction ID (TrxID)",
+    "trxIdHint": "Optional. You'll find it in the confirmation SMS.",
     "walletErrors": {
       "number": "Enter a valid 11-digit mobile number (01…).",
       "trxId": "A transaction ID has 8–12 letters and digits."
-    }
+    },
+    "sendTo": "Send {amount} to {number} ({wallet} Send Money), then fill in below."
   },
   "Order": {
     "metaTitle": "Order confirmation",
@@ -936,7 +937,8 @@
       "error": "The order couldn't be cancelled. Try again in a moment."
     },
     "myOrders": "My orders",
-    "continueShopping": "Continue shopping"
+    "continueShopping": "Continue shopping",
+    "verifyingPayment": "We are verifying your payment. You'll be notified when it's confirmed."
   },
   "MyOrders": {
     "metaTitle": "My orders",
@@ -2586,7 +2588,10 @@
     "pages": "Pages",
     "prev": "Previous",
     "next": "Next",
-    "pageOf": "Page {page} of {total}"
+    "pageOf": "Page {page} of {total}",
+    "wallet": "Wallet",
+    "noTrx": "Not given",
+    "amount": "Amount"
   },
   "AdminBanners": {
     "title": "Home banners",

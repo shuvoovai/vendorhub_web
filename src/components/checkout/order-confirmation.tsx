@@ -313,6 +313,15 @@ function OrderCard({ order, checkoutId }: { order: Order; checkoutId: string }) 
         </div>
       )}
 
+      {(order.paymentMethod === "BKASH" || order.paymentMethod === "NAGAD") &&
+        order.paymentStatus === "PENDING" &&
+        order.status !== "CANCELLED" && (
+          <p role="status" className="type-body flex items-start gap-2 rounded-md bg-info-soft p-3 text-verified">
+            <LoaderCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {t("verifyingPayment")}
+          </p>
+        )}
+
       {justPaid && order.paymentStatus === "PAID" && (
         <p role="status" className="type-body flex items-center gap-2 text-success-ink">
           <CircleCheck className="size-4 shrink-0" aria-hidden />

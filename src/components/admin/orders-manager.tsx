@@ -161,6 +161,23 @@ export function OrdersManager() {
                       {tOrder(`payment.${o.paymentMethod}`)} · {tOrder(`paymentStatus.${o.paymentStatus}`)}
                     </span>
                   </div>
+                  {/* bKash / Nagad: what the admin checks in the merchant account before "Mark paid" */}
+                  {(o.payments ?? [])
+                    .filter((p) => p.walletNumber || p.transactionId)
+                    .map((p) => (
+                      <dl key={p.id} className="type-caption grid grid-cols-[auto_1fr] gap-x-2 rounded-sm border border-gold bg-highlight-soft/40 px-2 py-1 text-ink">
+                        <dt className="text-ink-muted">{t("wallet")}</dt>
+                        <dd className="font-medium">
+                          {p.provider === "nagad" ? tOrder("payment.NAGAD") : tOrder("payment.BKASH")} · {p.walletNumber ?? "—"}
+                        </dd>
+                        <dt className="text-ink-muted">TrxID</dt>
+                        <dd className="font-medium break-all">{p.transactionId ?? t("noTrx")}</dd>
+                        <dt className="text-ink-muted">{t("amount")}</dt>
+                        <dd>
+                          {formatTaka(p.amount, locale)} · {tOrder(`paymentStatus.${p.status}`)}
+                        </dd>
+                      </dl>
+                    ))}
                   <div className="flex flex-wrap gap-2">
                     {nextStatuses(o).map((next) => (
                       <button

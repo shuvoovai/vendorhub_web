@@ -8,8 +8,8 @@ export type OrderStatus = components["schemas"]["OrderStatus"];
 export type PaymentStatus = components["schemas"]["PaymentStatus"];
 
 export type DeliveryMethod = "STORE_PICKUP" | "VENDOR_DELIVERY";
-// ONLINE = card on the gateway's own page. BKASH / NAGAD: no gateway yet; the order is placed with
-// payment PENDING and the admin marks it paid. NAGAD needs the backend update (checkout.schema.js).
+// ONLINE = card on the gateway's own page. BKASH / NAGAD: the customer sends the money to our merchant
+// number (GET /payment-options); the order is placed with payment PENDING and the admin marks it paid.
 export type PaymentMethod = "ONLINE" | "PAY_AT_STORE" | "CASH_ON_DELIVERY" | "BKASH" | "NAGAD";
 
 export const ORDER_STATUSES: OrderStatus[] = [
@@ -67,6 +67,16 @@ export type ShopChoice = {
   paymentDetails?: { walletNumber: string; transactionId?: string };
 };
 
+// Where to send bKash / Nagad money. A wallet that is null is not offered.
+export type PaymentOptions = {
+  bkash: { merchantNumber: string } | null;
+  nagad: { merchantNumber: string } | null;
+};
+
+export function getPaymentOptions(): Promise<PaymentOptions> {
+  return api.get<PaymentOptions>("/payment-options");
+}
+
 export const checkoutKeys = {
   checkout: (checkoutId: string) => ["checkout", checkoutId] as const,
   orders: (status: OrderStatus | undefined, page: number) => ["orders", status ?? "ALL", page] as const,
@@ -96,7 +106,20 @@ export function cancelOrder(orderId: string, reason?: string): Promise<Order> {
   return api.post<Order>(`/orders/${encodeURIComponent(orderId)}/cancel`, reason ? { reason } : {});
 }
 // ---------- Admin: orders the vendor has approved (CONFIRMED and later) ----------
-export type AdminOrder = Order & { customer: { id: string; name: string; phone: string | null } | null };
+// ADMIN ONLY: walletNumber / transactionId let the admin find bKash / Nagad money. Never shown elsewhere.
+export type AdminPayment = {
+  id: string;
+  provider: string;
+  amount: number;
+  status: PaymentStatus;
+  walletNumber: string | null;
+  transactionId: string | null;
+  createdAt: string;
+};
+export type AdminOrder = Order & {
+  customer: { id: string; name: string; phone: string | null } | null;
+  payments?: AdminPayment[];
+};
 export type AdminOrderUpdate = { status?: OrderStatus; paymentStatus?: PaymentStatus };
 
 export const adminOrderKeys = {
