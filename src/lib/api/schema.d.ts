@@ -2331,8 +2331,8 @@ export interface paths {
         get: operations["ownerListDeals"];
         put?: never;
         /**
-         * Create a flash deal on one of the shop's listings (audited as deal.created)
-         * @description dealPrice must be lower than the listing price; endsAt after startsAt, at most 7 days later and in the future. At most one active deal per listing in any period (409). A listing of another shop: 404.
+         * Request a flash deal on one of the shop's listings (status PENDING; audited as deal.created)
+         * @description Always created PENDING (also by an admin through this route); it changes no price until an admin approves it (PATCH /api/v1/admin/deals/{id}/review). dealPrice must be lower than the listing price; endsAt after startsAt, at most 7 days later and in the future. At most one active PENDING or APPROVED deal per listing in any period (409; REJECTED deals do not count). A listing of another shop: 404.
          */
         post: operations["ownerCreateDeal"];
         delete?: never;
@@ -2355,7 +2355,10 @@ export interface paths {
         delete: operations["ownerDeleteDeal"];
         options?: never;
         head?: never;
-        /** Update a deal (same rules as create; audited as deal.updated) */
+        /**
+         * Update a deal (same rules as create; audited as deal.updated)
+         * @description Changing dealPrice, startsAt, endsAt or stockLimit of an APPROVED or REJECTED deal sends it back to PENDING (reviewedAt and rejectReason are cleared) until an admin approves it again. Changing only isActive (pause / resume) keeps the status.
+         */
         patch: operations["ownerUpdateDeal"];
         trace?: never;
     };
@@ -2366,7 +2369,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** All flash deals (latest end first) */
+        /** Flash deals by review status (PENDING = oldest request first; otherwise latest end first) */
         get: operations["adminListDeals"];
         put?: never;
         post?: never;
@@ -2374,6 +2377,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/deals/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Approve or reject a PENDING deal request (audited as deal.approved / deal.rejected; the shop owner is notified)
+         * @description Only APPROVED deals change a price (flash list, product page, cart, checkout). 409 when the deal is not PENDING, or on APPROVE when it has already ended or overlaps another APPROVED active deal on the listing.
+         */
+        patch: operations["adminReviewDeal"];
         trace?: never;
     };
     "/api/v1/admin/deals/{id}": {
@@ -3734,6 +3757,11 @@ export interface components {
              */
             listingId: string;
         };
+        /**
+         * @description A shop's deal is a request (PENDING) until an admin approves it; only APPROVED deals are live.
+         * @enum {string}
+         */
+        DealStatus: "PENDING" | "APPROVED" | "REJECTED";
         FlashDeal: {
             /** Format: uuid */
             id: string;
@@ -3747,6 +3775,11 @@ export interface components {
             isActive: boolean;
             stockLimit: number | null;
             soldQty: number;
+            status: components["schemas"]["DealStatus"];
+            /** @description The admin's reason, only for REJECTED. */
+            rejectReason: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3766,6 +3799,8 @@ export interface components {
                     id: string;
                     slug: string;
                     title: string;
+                    /** @description The product's first image. */
+                    image: string | null;
                 };
             };
         };
@@ -9258,6 +9293,8 @@ export interface operations {
     adminListDeals: {
         parameters: {
             query?: {
+                /** @description Omit for all deals. */
+                status?: components["schemas"]["DealStatus"];
                 page?: components["parameters"]["Page"];
                 limit?: number;
             };
@@ -9285,6 +9322,42 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    adminReviewDeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DealId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "APPROVE" | "REJECT";
+                    /** @description Required for REJECT (trimmed; shown to the shop). Ignored for APPROVE. */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The reviewed deal. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlashDealResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     adminDeleteDeal: {

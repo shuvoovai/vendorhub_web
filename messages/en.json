@@ -1406,7 +1406,8 @@
     "verification": "Verification",
     "settings": "Settings",
     "returns": "Returns",
-    "waiting": "{label}, {count} waiting"
+    "waiting": "{label}, {count} waiting",
+    "deals": "Flash deals"
   },
   "Admin": {
     "metaTitle": "Admin",
@@ -1427,7 +1428,8 @@
       "tolets": "To-let requests",
       "back": "Back to the marketplace",
       "orders": "Orders",
-      "banners": "Home banners"
+      "banners": "Home banners",
+      "deals": "Flash deals"
     },
     "loading": "Loading…",
     "guestTitle": "Log in as an admin",
@@ -2777,5 +2779,96 @@
         }
       ]
     }
+  },
+  "AdminDeals": {
+    "title": "Flash deals",
+    "subtitle": "Shops request flash deals. Approve one to put it on the home page, or reject it with a reason.",
+    "tab": {
+      "PENDING": "Waiting",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "empty": {
+      "PENDING": "No requests waiting.",
+      "APPROVED": "No approved deals.",
+      "REJECTED": "No rejected requests."
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "reasonLabel": "Why is it rejected? The shop sees this.",
+    "reasonPlaceholder": "For example: the deal price is not lower than the market price.",
+    "reasonError": "Write a reason of 5 to 300 characters.",
+    "sendReject": "Reject request",
+    "expired": "This request's end time has passed, so it can't be approved.",
+    "loadError": "Flash deals couldn't load.",
+    "retry": "Try again",
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {total}"
+  },
+  "DealForm": {
+    "title": "Request a flash deal",
+    "reviewNote": "Our team reviews every request. It goes on the home page after approval.",
+    "product": "Product",
+    "chooseProduct": "Choose a product",
+    "noListings": "No active products in this shop",
+    "loading": "Loading…",
+    "dealPrice": "Deal price (৳)",
+    "regularPrice": "Regular price {price}. The deal price must be lower.",
+    "stockLimit": "Stock limit (optional)",
+    "stockHint": "Units sold at the deal price. Empty = no limit.",
+    "startsAt": "Starts",
+    "endsAt": "Ends",
+    "maxDaysHint": "At most {days} days after the start.",
+    "send": "Send request",
+    "sending": "Sending…",
+    "cancel": "Cancel",
+    "pause": "Pause",
+    "resume": "Resume",
+    "delete": "Delete",
+    "withdraw": "Withdraw",
+    "confirmDelete": "Yes, remove",
+    "sold": "{sold} sold",
+    "soldOf": "{sold} of {limit} sold",
+    "rejectedBecause": "Rejected: {reason}",
+    "phase": {
+      "pending": "Waiting for approval",
+      "rejected": "Rejected",
+      "paused": "Paused",
+      "upcoming": "Approved · starts soon",
+      "live": "Live",
+      "ended": "Ended"
+    },
+    "errors": {
+      "listing": "Choose a product.",
+      "price": "Enter the deal price in whole taka.",
+      "priceLower": "Must be lower than the regular price ({price}).",
+      "date": "Choose a date and time.",
+      "endAfter": "Must be after the start.",
+      "endFuture": "Must be in the future.",
+      "maxDays": "A deal can last at most {days} days.",
+      "stock": "Enter a number from 1 to 100,000, or leave it empty.",
+      "conflict": "This can't be done now: the product may already have a deal at that time, or the deal changed. Reload and try again.",
+      "checkFields": "Some details are not valid. Check the fields and try again.",
+      "notFound": "This product or deal no longer exists. Reload the page.",
+      "network": "No connection. Check your internet and try again.",
+      "generic": "Something went wrong. Try again.",
+      "listingsLoad": "Your products couldn't load."
+    }
+  },
+  "OwnerDeals": {
+    "title": "Flash deals",
+    "subtitle": "Ask for a short-time discount on the home page. Our team approves it first.",
+    "loading": "Loading flash deals…",
+    "request": "Request a flash deal",
+    "empty": "No flash deal requests yet",
+    "emptyHint": "Pick a product, set a lower price and a time. After approval it shows in Flash deals on the home page.",
+    "guestTitle": "Log in to manage your flash deals",
+    "logIn": "Log in",
+    "notTeamTitle": "Flash deals are for shop teams",
+    "noShop": "Set up your shop first.",
+    "setup": "Set up shop",
+    "loadError": "Flash deals couldn't load.",
+    "retry": "Try again"
   }
 }
