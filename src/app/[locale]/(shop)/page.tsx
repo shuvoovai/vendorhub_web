@@ -1,4 +1,5 @@
 import { ChevronRight, Handshake, ShieldCheck } from "lucide-react";
+import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import { Arcade } from "@/components/brand/arcade";
@@ -96,13 +97,25 @@ function MarketDoorsSkeleton() {
   );
 }
 
-// Cached for 60 seconds on the server (see catalog-cache.ts), streamed in after the page shell.
+/** Fisher–Yates shuffle on a copy (the cached array is never changed). */
+function shuffled<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// Data cached for 60 seconds on the server (see catalog-cache.ts), streamed in after the page shell.
+// The order is shuffled on every visit: connection() moves this part to request time.
 async function LatestProducts() {
+  await connection();
   const t = await getTranslations("Catalog");
 
   let products: ProductCardData[];
   try {
-    products = await getLatestProducts();
+    products = shuffled(await getLatestProducts());
   } catch {
     return <p className="type-body text-ink-secondary">{t("loadError")}</p>;
   }
