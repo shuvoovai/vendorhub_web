@@ -1,5 +1,6 @@
 import "client-only";
 import { api } from "./client";
+import type { ApiResult } from "./core";
 
 // FREE: every shop starts here, no payment. PRO: paid by bKash / Nagad to our merchant number
 // (GET /payment-options); the request stays PENDING until an admin checks the money and approves it.
@@ -50,6 +51,7 @@ export type SubscriptionRequestInput = {
 export const subscriptionKeys = {
   plans: ["subscription-plans"] as const,
   shop: (shopId: string) => ["shop-subscription", shopId] as const,
+  admin: (status: SubscriptionRequestStatus, page: number) => ["admin-subscriptions", status, page] as const,
 };
 
 export function getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
@@ -68,4 +70,25 @@ export function requestSubscription(shopId: string, input: SubscriptionRequestIn
 /** Withdraw a PENDING request (before the admin has looked at it). */
 export function withdrawSubscriptionRequest(shopId: string, id: string): Promise<void> {
   return api.delete<void>(`/shops/${encodeURIComponent(shopId)}/subscription/requests/${encodeURIComponent(id)}`);
+}
+
+// ---------- Admin ----------
+// ADMIN ONLY: walletNumber / transactionId let the admin find the money in the bKash / Nagad account.
+export type AdminSubscriptionRequest = SubscriptionRequest & {
+  shop: { id: string; name: string; slug: string };
+};
+
+export function adminListSubscriptionRequests(
+  status: SubscriptionRequestStatus,
+  page: number,
+): Promise<ApiResult<AdminSubscriptionRequest[]>> {
+  return api.list<AdminSubscriptionRequest>("/admin/subscriptions/requests", { query: { status, page, limit: 20 } });
+}
+
+/** APPROVE extends the shop's Pro period by the request's months; REJECT needs a reason the owner sees. */
+export function reviewSubscriptionRequest(
+  id: string,
+  body: { decision: "APPROVE" } | { decision: "REJECT"; reason: string },
+): Promise<AdminSubscriptionRequest> {
+  return api.patch<AdminSubscriptionRequest>(`/admin/subscriptions/requests/${encodeURIComponent(id)}/review`, body);
 }

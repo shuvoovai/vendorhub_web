@@ -1430,7 +1430,8 @@
       "back": "Back to the marketplace",
       "orders": "Orders",
       "banners": "Home banners",
-      "deals": "Flash deals"
+      "deals": "Flash deals",
+      "subscriptions": "Pro subscriptions"
     },
     "loading": "Loading…",
     "guestTitle": "Log in as an admin",
@@ -2941,6 +2942,49 @@
       "wallet": "Enter a valid mobile number, e.g. 01712345678",
       "trxId": "Enter the transaction ID: 8–12 letters or digits",
       "pending": "You already have a request waiting.",
+      "checkFields": "Check the details and try again.",
+      "network": "No connection. Try again.",
+      "generic": "Something went wrong. Try again."
+    }
+  },
+  "AdminSubscriptions": {
+    "title": "Pro subscriptions",
+    "subtitle": "Shops pay for Pro by bKash or Nagad. Find the payment in the merchant account, then approve or reject it.",
+    "tab": {
+      "PENDING": "Waiting",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "empty": {
+      "PENDING": "No payments waiting.",
+      "APPROVED": "No approved payments.",
+      "REJECTED": "No rejected payments."
+    },
+    "planMonths": "{plan} · {months, plural, one {# month} other {# months}}",
+    "amount": "Amount",
+    "method": "Paid with",
+    "wallet": "Sender number",
+    "trxId": "Transaction ID",
+    "requested": "Requested",
+    "reviewed": "Reviewed",
+    "reason": "Reason: {reason}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "confirmApprove": "Did {amount} arrive by {method} from {wallet} with transaction ID {trx}? Approving starts or extends the shop's Pro plan.",
+    "yesApprove": "Yes, payment received",
+    "cancel": "Cancel",
+    "reasonLabel": "Why is it rejected? The shop owner sees this.",
+    "reasonPlaceholder": "For example: no payment found with this transaction ID.",
+    "reasonError": "Write a reason of 3 to 300 characters.",
+    "sendReject": "Reject payment",
+    "loadError": "Subscription payments couldn't load.",
+    "retry": "Try again",
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {total}",
+    "errors": {
+      "conflict": "This request was already reviewed. The list is refreshed.",
+      "notFound": "This request no longer exists.",
       "checkFields": "Check the details and try again.",
       "network": "No connection. Try again.",
       "generic": "Something went wrong. Try again."
