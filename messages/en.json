@@ -1407,7 +1407,8 @@
     "settings": "Settings",
     "returns": "Returns",
     "waiting": "{label}, {count} waiting",
-    "deals": "Flash deals"
+    "deals": "Flash deals",
+    "subscription": "Subscription"
   },
   "Admin": {
     "metaTitle": "Admin",
@@ -2870,5 +2871,79 @@
     "setup": "Set up shop",
     "loadError": "Flash deals couldn't load.",
     "retry": "Try again"
+  },
+  "OwnerSubscription": {
+    "title": "Subscription",
+    "subtitle": "Start free. Upgrade to Pro when your shop grows.",
+    "loading": "Loading your plan…",
+    "guestTitle": "Log in to manage your plan",
+    "logIn": "Log in",
+    "notTeamTitle": "Plans are for shop owners",
+    "ownerOnly": "Only the shop owner can change the plan",
+    "noShop": "Set up your shop first.",
+    "setup": "Set up shop",
+    "loadError": "Your plan couldn't load.",
+    "retry": "Try again",
+    "current": "Current plan",
+    "free": "Free",
+    "perMonth": "{price} / month",
+    "forMonths": "{price} for {months, plural, one {# month} other {# months}}",
+    "included": "Included",
+    "notIncluded": "Not included",
+    "plans": {
+      "FREE": {
+        "name": "Free",
+        "tagline": "To get your shop online"
+      },
+      "PRO": {
+        "name": "Pro",
+        "tagline": "For growing shops"
+      }
+    },
+    "features": {
+      "listings": "Up to {count, plural, one {# product} other {# products}}",
+      "listingsUnlimited": "Unlimited products",
+      "flashDeals": "Flash deals on the home page",
+      "featuredBadge": "Pro badge and a higher place in search"
+    },
+    "usage": "Products listed: {used} of {max}",
+    "usageUnlimited": "Products listed: {used} (no limit)",
+    "activeUntil": "Pro is active until {date}.",
+    "upgrade": "Upgrade to Pro",
+    "extend": "Extend Pro",
+    "pendingTitle": "We are checking your payment",
+    "pendingBody": "{amount} by {method}, transaction ID {trx}, for {months, plural, one {# month} other {# months}}. Pro starts once our team confirms the payment.",
+    "withdraw": "Withdraw request",
+    "confirmWithdraw": "Yes, withdraw",
+    "cancel": "Cancel",
+    "rejectedTitle": "Your last payment couldn't be confirmed",
+    "rejectedReason": "Reason: {reason}",
+    "rejectedHint": "Check the transaction ID and send a new request.",
+    "methods": {
+      "BKASH": "bKash",
+      "NAGAD": "Nagad"
+    },
+    "form": {
+      "title": "Pay for Pro",
+      "duration": "How long",
+      "monthOption": "{months, plural, one {# month} other {# months}} · {price}",
+      "method": "Pay with",
+      "sendTo": "Send {amount} to {wallet} number {number}, then fill in the details below.",
+      "walletNumber": "Your {name} number",
+      "walletHint": "The number you sent the money from",
+      "trxId": "Transaction ID (TrxID)",
+      "trxIdHint": "In the SMS from {name}",
+      "submit": "Send for checking",
+      "sending": "Sending…",
+      "noWallet": "Online payment isn't available right now. Please contact us to upgrade."
+    },
+    "errors": {
+      "wallet": "Enter a valid mobile number, e.g. 01712345678",
+      "trxId": "Enter the transaction ID: 8–12 letters or digits",
+      "pending": "You already have a request waiting.",
+      "checkFields": "Check the details and try again.",
+      "network": "No connection. Try again.",
+      "generic": "Something went wrong. Try again."
+    }
   }
 }
