@@ -1,6 +1,9 @@
 // Reading and writing the storefront URL (/shops/x?tab=reviews&reviews=trust&page=2).
 // Every value from the URL is checked; anything unexpected falls back to the default.
-import type { ProductSort } from "@/lib/api/catalog";
+import type { ProductSort as CatalogSort } from "@/lib/api/catalog";
+
+// The shop product list has no random sort.
+type ProductSort = Exclude<CatalogSort, "random">;
 
 export type ShopTab = "products" | "bargains" | "reviews";
 export type ReviewFilter = "all" | "trust" | "product";

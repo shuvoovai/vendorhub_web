@@ -16,12 +16,14 @@ export type SearchState = {
   marketId?: string;
   availableOnly: boolean;
   sort: ProductSort;
+  seed?: string; // sort=random only
   page: number;
 };
 
 type RawParams = Record<string, string | string[] | undefined>;
 
-const SORTS: ProductSort[] = ["newest", "price_asc", "price_desc"];
+const SORTS: ProductSort[] = ["newest", "price_asc", "price_desc", "random"];
+export const SEED = /^[A-Za-z0-9]{1,32}$/; // the backend rule for ?seed= (sort=random)
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -50,7 +52,9 @@ function wholeNumber(value: string | undefined, min: number, max: number): numbe
 export function parseSearchParams(raw: RawParams): SearchState {
   const category = first(raw.category);
   const marketId = first(raw.marketId);
-  const sort = first(raw.sort) as ProductSort | undefined;
+  const rawSort = first(raw.sort) as ProductSort | undefined;
+  const sort = rawSort && SORTS.includes(rawSort) ? rawSort : "newest";
+  const seed = first(raw.seed);
 
   let minPrice = wholeNumber(first(raw.minPrice), 0, MAX_PRICE);
   let maxPrice = wholeNumber(first(raw.maxPrice), 0, MAX_PRICE);
@@ -66,7 +70,8 @@ export function parseSearchParams(raw: RawParams): SearchState {
     maxPrice,
     marketId: marketId && UUID.test(marketId) ? marketId : undefined,
     availableOnly: first(raw.availableOnly) === "true",
-    sort: sort && SORTS.includes(sort) ? sort : "newest",
+    sort,
+    seed: sort === "random" && seed && SEED.test(seed) ? seed : undefined,
     page: wholeNumber(first(raw.page), 1, MAX_PAGE) ?? 1,
   };
 }
@@ -81,6 +86,7 @@ export function toProductQuery(state: SearchState): ProductListQuery {
     marketId: state.marketId,
     availableOnly: state.availableOnly || undefined,
     sort: state.sort,
+    seed: state.sort === "random" ? state.seed : undefined,
     page: state.page,
     limit: PAGE_SIZE,
   };
@@ -111,6 +117,7 @@ export function searchHref(state: SearchState, changes: Partial<SearchState> = {
   if (next.marketId) params.set("marketId", next.marketId);
   if (next.availableOnly) params.set("availableOnly", "true");
   if (next.sort !== "newest") params.set("sort", next.sort);
+  if (next.sort === "random" && next.seed) params.set("seed", next.seed);
   if (next.page > 1) params.set("page", String(next.page));
   const query = params.toString();
   return query ? `/search?${query}` : "/search";

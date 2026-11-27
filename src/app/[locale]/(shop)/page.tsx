@@ -15,7 +15,7 @@ import { Link } from "@/i18n/routing";
 import type { ProductCardData } from "@/lib/api/catalog";
 import {
   getBanners,
-  getLatestProducts,
+  getMixedProducts,
   getMarkets,
 } from "@/lib/api/catalog-cache";
 import type { Market } from "@/lib/api/shops";
@@ -107,15 +107,27 @@ function shuffled<T>(items: T[]): T[] {
   return out;
 }
 
-// Data cached for 60 seconds on the server (see catalog-cache.ts), streamed in after the page shell.
-// The order is shuffled on every visit: connection() moves this part to request time.
-async function LatestProducts() {
+const MIX_WINDOW_MS = 10 * 60_000; // a new random mix every 10 minutes
+
+/**
+ * A random mix from the whole catalogue, cached per seed (see catalog-cache.ts). connection() moves this to
+ * request time: the seed follows the clock, and the cards are also shuffled on every visit (same products,
+ * new order; /search page 2 with the same seed still never repeats them).
+ */
+async function loadMix(): Promise<{ seed: string; products: ProductCardData[] }> {
   await connection();
+  const seed = `h${Math.floor(Date.now() / MIX_WINDOW_MS)}`;
+  return { seed, products: shuffled(await getMixedProducts(seed)) };
+}
+
+// Streamed in after the page shell.
+async function LatestProducts() {
   const t = await getTranslations("Catalog");
 
+  let seed: string;
   let products: ProductCardData[];
   try {
-    products = shuffled(await getLatestProducts());
+    ({ seed, products } = await loadMix());
   } catch {
     return <p className="type-body text-ink-secondary">{t("loadError")}</p>;
   }
@@ -131,7 +143,7 @@ async function LatestProducts() {
       </div>
       {products.length >= PAGE_SIZE && (
         <Link
-          href="/search?page=2"
+          href={`/search?availableOnly=true&sort=random&seed=${seed}&page=2`}
           className="type-body-medium flex h-11 items-center justify-center gap-2 self-center rounded-sm border border-brand px-6 text-brand hover:bg-subtle focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
         >
           {t("nextPage")}

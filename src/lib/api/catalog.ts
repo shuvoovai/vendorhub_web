@@ -28,7 +28,8 @@ export type ProductCardData = {
   hasVariants?: boolean; // that offer needs a choice (color, size…): the card links to the product instead
 };
 
-export type ProductSort = "newest" | "price_asc" | "price_desc";
+// random: a shuffle that stays the same for one seed, so pages never repeat or skip a product.
+export type ProductSort = "newest" | "price_asc" | "price_desc" | "random";
 
 export type ProductListQuery = {
   q?: string;
@@ -40,6 +41,7 @@ export type ProductListQuery = {
   shopId?: string;
   availableOnly?: boolean;
   sort?: ProductSort;
+  seed?: string; // sort=random only; without one the server picks it and returns meta.seed
   page?: number;
   limit?: number; // max 50
 };

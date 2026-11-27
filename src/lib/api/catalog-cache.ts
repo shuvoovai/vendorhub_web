@@ -9,16 +9,17 @@ import { PAGE_SIZE } from "@/lib/search-params";
 const SLOW_CHANGING = { stale: 300, revalidate: 600, expire: 3600 };
 
 /**
- * Home page "New in Dhaka's shops": the same 8 products for everyone, so it is cached.
- * The API is asked at most about once a minute, however many people open the home page.
+ * Home page "All products": a random mix from the whole catalogue (sort=random). The seed changes every
+ * 10 minutes, so everyone shares one cache entry per seed and the API is asked about once a minute.
+ * The same seed on /search page 2 continues this order without repeating a product.
  * Errors are not cached (the next visit tries again).
  */
-export async function getLatestProducts(): Promise<ProductCardData[]> {
+export async function getMixedProducts(seed: string): Promise<ProductCardData[]> {
   "use cache";
   cacheLife({ stale: 60, revalidate: 60, expire: 600 }); // seconds
   cacheTag("products");
 
-  const { data } = await listProducts({ sort: "newest", availableOnly: true, limit: PAGE_SIZE }, { fresh: false });
+  const { data } = await listProducts({ sort: "random", seed, availableOnly: true, limit: PAGE_SIZE }, { fresh: false });
   return data;
 }
 

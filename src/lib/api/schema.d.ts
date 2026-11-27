@@ -380,7 +380,7 @@ export interface paths {
         put?: never;
         /**
          * Add a NEW catalog product together with this shop's listing (live at once)
-         * @description Here {slug} is the shop ID (the path is shared with the public storefront list). The shop must be active and at least DOCUMENTS_VERIFIED. At most 20 new products per shop per 24 hours. Brand and category must already exist. Unknown fields are rejected.
+         * @description Here {slug} is the shop ID (the path is shared with the public storefront list). The shop must be active and at least DOCUMENTS_VERIFIED. At most 20 new products per shop per 24 hours. Brand and category must already exist. Unknown fields are rejected. A FREE shop with as many active listings as its plan allows (GET /api/v1/subscription-plans) gets 403 with details.code PLAN_LIMIT; existing listings are never removed.
          */
         post: operations["createShopProduct"];
         delete?: never;
@@ -453,7 +453,7 @@ export interface paths {
         put?: never;
         /**
          * Sell a catalog product in this shop
-         * @description If availability is left out it is derived from stockQty (0 = OUT_OF_STOCK, 1-5 = LIMITED, 6 or more = IN_STOCK). minOfferPercent is the lowest offer (as a percent of the price) that is accepted automatically.
+         * @description If availability is left out it is derived from stockQty (0 = OUT_OF_STOCK, 1-5 = LIMITED, 6 or more = IN_STOCK). minOfferPercent is the lowest offer (as a percent of the price) that is accepted automatically. Re-adding a removed listing re-activates it. A FREE shop with as many active listings as its plan allows (GET /api/v1/subscription-plans) gets 403 with details.code PLAN_LIMIT; existing listings are never removed.
          */
         post: operations["createListing"];
         delete?: never;
@@ -476,7 +476,10 @@ export interface paths {
         delete: operations["deactivateListing"];
         options?: never;
         head?: never;
-        /** Change price, stock, availability or bargaining */
+        /**
+         * Change price, stock, availability or bargaining
+         * @description Setting isActive true on an inactive listing counts against the plan. A FREE shop with as many active listings as its plan allows (GET /api/v1/subscription-plans) gets 403 with details.code PLAN_LIMIT; existing listings are never removed.
+         */
         patch: operations["updateListing"];
         trace?: never;
     };
@@ -2332,7 +2335,7 @@ export interface paths {
         put?: never;
         /**
          * Request a flash deal on one of the shop's listings (status PENDING; audited as deal.created)
-         * @description Always created PENDING (also by an admin through this route); it changes no price until an admin approves it (PATCH /api/v1/admin/deals/{id}/review). dealPrice must be lower than the listing price; endsAt after startsAt, at most 7 days later and in the future. At most one active PENDING or APPROVED deal per listing in any period (409; REJECTED deals do not count). A listing of another shop: 404.
+         * @description Always created PENDING (also by an admin through this route); it changes no price until an admin approves it (PATCH /api/v1/admin/deals/{id}/review). dealPrice must be lower than the listing price; endsAt after startsAt, at most 7 days later and in the future. At most one active PENDING or APPROVED deal per listing in any period (409; REJECTED deals do not count). A listing of another shop: 404. Flash deals need the Pro plan: a FREE shop gets 403 with details.code PLAN_REQUIRED (deals approved earlier keep running until they end; on PATCH, changing price, dates or stock limit is also a request).
          */
         post: operations["ownerCreateDeal"];
         delete?: never;
@@ -2818,6 +2821,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/subscription-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The vendor plans (FREE and PRO) with their limits and prices
+         * @description Public. Sent with Cache-Control "public, max-age=300". Prices and limits come from the server config only; a subscription request never takes an amount from the client.
+         */
+        get: operations["listSubscriptionPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shops/{shopId}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The shop's plan, Pro end date, listings used and open / last rejected request (shop owner only)
+         * @description Only the shop's owner (from the session). Staff of the shop get 403; anyone else (also admins) 404. The plan is PRO while the paid period has not ended, else FREE (computed on every read).
+         */
+        get: operations["getShopSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shops/{shopId}/subscription/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for Pro after paying by bKash / Nagad (shop owner only; audited as subscription.requested)
+         * @description The owner sends the price of the chosen period (GET /api/v1/subscription-plans) to our merchant number (GET /api/v1/payment-options), then sends the wallet number and TrxID here. amount is taken from the server config for those months. Admins are notified. Rate limited: 20 attempts per hour per user (always on). 409 when the shop already has a PENDING request (details.code REQUEST_PENDING) or the TrxID was used before by any subscription request or order wallet payment (details.code TRANSACTION_USED). 400 when the method has no merchant number right now. Staff: 403; anyone else: 404.
+         */
+        post: operations["createSubscriptionRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shops/{shopId}/subscription/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw a PENDING subscription request (shop owner only; audited as subscription.withdrawn)
+         * @description The request is deleted. 409 once an admin has reviewed it; another shop's request 404.
+         */
+        delete: operations["withdrawSubscriptionRequest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscriptions/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Subscription requests by status (PENDING = oldest first; otherwise newest first) */
+        get: operations["adminListSubscriptionRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscriptions/requests/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Approve or reject a PENDING subscription request (audited; the shop owner is notified)
+         * @description APPROVE (one transaction): the request becomes APPROVED and the shop's Pro period is extended by the paid calendar months (Asia/Dhaka) from the current end while the shop is still Pro, else from now. REJECT needs a reason (3-300 characters, trimmed; shown to the owner). 409 when the request is not PENDING.
+         */
+        patch: operations["adminReviewSubscriptionRequest"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2945,6 +3065,8 @@ export interface components {
             supportsDelivery?: boolean;
             supportsPickup?: boolean;
             avgResponseMins?: number | null;
+            /** @description The shop is on the Pro plan right now (featured badge). */
+            isPro: boolean;
             market?: components["schemas"]["IdNameSlug"] | null;
             rating?: {
                 average?: number | null;
@@ -3098,6 +3220,8 @@ export interface components {
                 /** Format: date-time */
                 lastAuditedAt?: string | null;
             };
+            /** @description The shop is on the Pro plan right now (featured badge). */
+            isPro: boolean;
             supportsDelivery?: boolean;
             supportsPickup?: boolean;
             returnPolicy?: {
@@ -3474,6 +3598,8 @@ export interface components {
             whatsapp: string | null;
             socialLinks: components["schemas"]["ShopSocialLinks"];
             verificationLevel: components["schemas"]["VerificationLevel"];
+            /** @description The shop is on the Pro plan right now (featured badge). Pro shops come first among results that are otherwise equal (same name-match group and verification level). */
+            isPro: boolean;
             market: {
                 /** Format: uuid */
                 id: string;
@@ -4062,6 +4188,67 @@ export interface components {
              */
             transactionId?: string;
         };
+        /** @enum {string} */
+        PlanCode: "FREE" | "PRO";
+        /** @enum {string} */
+        SubscriptionMethod: "BKASH" | "NAGAD";
+        /** @enum {string} */
+        SubscriptionRequestStatus: "PENDING" | "APPROVED" | "REJECTED";
+        SubscriptionPlan: {
+            code: components["schemas"]["PlanCode"];
+            /** @description Active listings allowed; null = unlimited. */
+            maxListings: number | null;
+            /** @description May request flash deals. */
+            flashDeals: boolean;
+            /** @description Shown with isPro on public shop answers and sorted first among equal search results. */
+            featuredBadge: boolean;
+            /** @description Empty for FREE. */
+            prices: {
+                months: number;
+                /** @description BDT. */
+                amount: number;
+            }[];
+        };
+        /** @description walletNumber and transactionId are shown only to the shop owner and admins. */
+        SubscriptionRequest: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            plan: "PRO";
+            months: number;
+            /** @description BDT, from the server config at request time. */
+            amount: number;
+            method: components["schemas"]["SubscriptionMethod"];
+            walletNumber: string;
+            transactionId: string;
+            status: components["schemas"]["SubscriptionRequestStatus"];
+            rejectReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            reviewedAt: string | null;
+        };
+        AdminSubscriptionRequest: components["schemas"]["SubscriptionRequest"] & {
+            shop: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                slug: string;
+            };
+        };
+        ShopSubscription: {
+            plan: components["schemas"]["PlanCode"];
+            /**
+             * Format: date-time
+             * @description When Pro ends; null on FREE.
+             */
+            currentPeriodEnd: string | null;
+            /** @description The shop's active listings. */
+            listingsUsed: number;
+            pendingRequest: components["schemas"]["SubscriptionRequest"] | null;
+            /** @description The newest REJECTED request, only when it is newer than the newest APPROVED one. */
+            lastRejected: components["schemas"]["SubscriptionRequest"] | null;
+        };
     };
     responses: {
         /** @description The input is invalid (error.details lists the fields). */
@@ -4220,6 +4407,8 @@ export interface components {
         DealId: string;
         FoodId: string;
         ToletId: string;
+        SubscriptionShopId: string;
+        SubscriptionRequestId: string;
     };
     requestBodies: {
         PhotoUpload: {
@@ -4619,8 +4808,13 @@ export interface operations {
                 shopId?: string;
                 marketId?: string;
                 availableOnly?: "true" | "false";
-                /** @description popular = units ordered in the last 30 days (cancelled orders excluded), then newest. */
-                sort?: "newest" | "price_asc" | "price_desc" | "popular";
+                /** @description popular = units ordered in the last 30 days (cancelled orders excluded), then newest. random = a shuffled order fixed by seed (same seed and filters = same order, so pages never repeat or skip a product). */
+                sort?: "newest" | "price_asc" | "price_desc" | "popular" | "random";
+                /**
+                 * @description Only for sort=random (ignored otherwise). Without it the server picks one and returns it in meta.seed; send that back for the next pages.
+                 * @example a1b2c3d4e5f6
+                 */
+                seed?: string;
                 /** @description Only products added in the last N days ("New arrivals"). */
                 newSinceDays?: number;
                 page?: components["parameters"]["Page"];
@@ -4643,7 +4837,12 @@ export interface operations {
                         success?: boolean;
                         data?: components["schemas"]["ProductCard"][];
                         meta?: {
-                            pagination?: components["schemas"]["Pagination"];
+                            pagination: components["schemas"]["Pagination"];
+                            /**
+                             * @description Only with sort=random; the seed this order used (the one sent, or the server's).
+                             * @example a1b2c3d4e5f6
+                             */
+                            seed?: string;
                         };
                     };
                 };
@@ -10161,6 +10360,211 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    listSubscriptionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plans. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["SubscriptionPlan"][];
+                    };
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["SubscriptionShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["ShopSubscription"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createSubscriptionRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["SubscriptionShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    plan: "PRO";
+                    /**
+                     * @description One of the PRO prices[].months.
+                     * @enum {integer}
+                     */
+                    months: 1 | 3 | 6 | 12;
+                    method: components["schemas"]["SubscriptionMethod"];
+                    /** @example 01712345678 */
+                    walletNumber: string;
+                    /**
+                     * @description The TrxID from the wallet app (stored in uppercase).
+                     * @example 9F3A1B2C4D
+                     */
+                    transactionId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The new PENDING request. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["SubscriptionRequest"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    withdrawSubscriptionRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: components["parameters"]["SubscriptionShopId"];
+                id: components["parameters"]["SubscriptionRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Withdrawn. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminListSubscriptionRequests: {
+        parameters: {
+            query?: {
+                /** @description Omit for all requests. */
+                status?: components["schemas"]["SubscriptionRequestStatus"];
+                page?: components["parameters"]["Page"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of requests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminSubscriptionRequest"][];
+                        meta: {
+                            pagination: components["schemas"]["Pagination"];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminReviewSubscriptionRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["SubscriptionRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "APPROVE";
+                } | {
+                    /** @enum {string} */
+                    decision: "REJECT";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The reviewed request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        data: components["schemas"]["AdminSubscriptionRequest"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
 }

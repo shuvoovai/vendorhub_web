@@ -11,7 +11,7 @@ import { getPathname, Link } from "@/i18n/routing";
 import { listProducts, type Brand, type Category } from "@/lib/api/catalog";
 import { getBrands, getCategories, getMarkets } from "@/lib/api/catalog-cache";
 import type { Market } from "@/lib/api/shops";
-import { parseSearchParams, searchHref, toProductQuery, type SearchState } from "@/lib/search-params";
+import { SEED, parseSearchParams, searchHref, toProductQuery, type SearchState } from "@/lib/search-params";
 import { cn } from "@/lib/utils";
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -45,6 +45,7 @@ function SearchForm({ locale, state, label, button }: { locale: string; state: S
     ["marketId", state.marketId],
     ["availableOnly", state.availableOnly ? "true" : undefined],
     ["sort", state.sort !== "newest" ? state.sort : undefined],
+    ["seed", state.sort === "random" ? state.seed : undefined],
   ];
 
   return (
@@ -150,6 +151,12 @@ async function Results({ state }: { state: SearchState }) {
   const products = result.data;
   const total = result.meta?.pagination?.total ?? products.length;
   const totalPages = result.meta?.pagination?.totalPages ?? 1;
+  // sort=random without a seed: the server picked one; the page links carry it so page 2 continues the same order.
+  const serverSeed = result.meta?.seed;
+  const pageState =
+    state.sort === "random" && !state.seed && typeof serverSeed === "string" && SEED.test(serverSeed)
+      ? { ...state, seed: serverSeed }
+      : state;
 
   if (products.length === 0) {
     return (
@@ -177,7 +184,7 @@ async function Results({ state }: { state: SearchState }) {
           <ProductCard key={product.id} product={product} />
         ))}
       </Stagger>
-      {totalPages > 1 && <Pagination state={state} totalPages={totalPages} />}
+      {totalPages > 1 && <Pagination state={pageState} totalPages={totalPages} />}
     </section>
   );
 }
